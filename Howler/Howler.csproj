@@ -10,15 +10,13 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Howler</RootNamespace>
     <AssemblyName>Howler</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
+    <DebugSymbols>True</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
+    <Optimize>False</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -27,49 +25,52 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>True</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject />
+    <StartupObject>Howler.Control.MainController</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="atk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\atk-sharp.dll</HintPath>
-    </Reference>
-    <Reference Include="gdk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\gdk-sharp.dll</HintPath>
-    </Reference>
-    <Reference Include="glade-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\glade-sharp.dll</HintPath>
-    </Reference>
-    <Reference Include="glib-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\glib-sharp.dll</HintPath>
-    </Reference>
-    <Reference Include="gtk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\gtk-sharp.dll</HintPath>
-    </Reference>
-    <Reference Include="pango-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\pango-sharp.dll</HintPath>
+    <Reference Include="Mono.Data.Sqlite">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\4.0\Mono.Data.Sqlite.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="atk-sharp">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\gtk-sharp-2.0\atk-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="gdk-sharp">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\gtk-sharp-2.0\gdk-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="glade-sharp">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\gtk-sharp-2.0\glade-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="glib-sharp">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\gtk-sharp-2.0\glib-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="gtk-dotnet">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\gtk-sharp-2.0\gtk-dotnet.dll</HintPath>
+    </Reference>
+    <Reference Include="gtk-sharp">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\gtk-sharp-2.0\gtk-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="pango-sharp">
+      <HintPath>..\..\..\..\..\..\Program Files %28x86%29\Mono-3.0.3\lib\mono\gtk-sharp-2.0\pango-sharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\Database\Database.cs" />
     <Compile Include="Gui\MainWindow.cs" />
     <Compile Include="Control\MainController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Core\Base\LocalTrack.cs" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="Core\" />
+    <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -79,4 +80,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup>
+    <Folder Include="Core\Base\" />
+  </ItemGroup>
 </Project>

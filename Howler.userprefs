@@ -1,0 +1,14 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Howler\Core\Database\Database.cs">
+    <Files>
+      <File FileName="Howler\Core\Database\Database.cs" Line="34" Column="28" />
+      <File FileName="Howler\Core\Base\LocalTrack.cs" Line="12" Column="29" />
+      <File FileName="Howler\Control\MainController.cs" Line="9" Column="27" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
