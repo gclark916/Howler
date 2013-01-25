@@ -5,11 +5,11 @@ namespace Howler
 {
 	public class LocalTrack
 	{
-		System.IO.Path FilePath { get; set; }
+		string Path { get; set; }
 
-		public LocalTrack (Path filePath)
+		public LocalTrack (string path)
 		{
-			this.FilePath = filePath;
+			this.Path = path;
 		}
 	}
 }
