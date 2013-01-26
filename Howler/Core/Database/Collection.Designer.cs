@@ -16,6 +16,13 @@ using System.Xml.Serialization;
 using System.Runtime.Serialization;
 
 [assembly: EdmSchemaAttribute()]
+#region EDM Relationship Metadata
+
+[assembly: EdmRelationshipAttribute("Collection", "TrackArtist", "Track", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Track), "Artist", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Artist))]
+[assembly: EdmRelationshipAttribute("Collection", "TrackAlbum", "Track", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Track), "Album", System.Data.Metadata.Edm.RelationshipMultiplicity.ZeroOrOne, typeof(Howler.Core.Database.Album))]
+[assembly: EdmRelationshipAttribute("Collection", "AlbumArtist", "Album", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Album), "Artist", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Artist))]
+
+#endregion
 
 namespace Howler.Core.Database
 {
@@ -80,6 +87,38 @@ namespace Howler.Core.Database
             }
         }
         private ObjectSet<Track> _Tracks;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<Artist> Artists
+        {
+            get
+            {
+                if ((_Artists == null))
+                {
+                    _Artists = base.CreateObjectSet<Artist>("Artists");
+                }
+                return _Artists;
+            }
+        }
+        private ObjectSet<Artist> _Artists;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<Album> Albums
+        {
+            get
+            {
+                if ((_Albums == null))
+                {
+                    _Albums = base.CreateObjectSet<Album>("Albums");
+                }
+                return _Albums;
+            }
+        }
+        private ObjectSet<Album> _Albums;
 
         #endregion
         #region AddTo Methods
@@ -90,6 +129,22 @@ namespace Howler.Core.Database
         public void AddToTracks(Track track)
         {
             base.AddObject("Tracks", track);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the Artists EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToArtists(Artist artist)
+        {
+            base.AddObject("Artists", artist);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the Albums EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToAlbums(Album album)
+        {
+            base.AddObject("Albums", album);
         }
 
         #endregion
@@ -103,24 +158,24 @@ namespace Howler.Core.Database
     /// <summary>
     /// No Metadata Documentation available.
     /// </summary>
-    [EdmEntityTypeAttribute(NamespaceName="Collection", Name="Track")]
+    [EdmEntityTypeAttribute(NamespaceName="Collection", Name="Album")]
     [Serializable()]
     [DataContractAttribute(IsReference=true)]
-    public partial class Track : EntityObject
+    public partial class Album : EntityObject
     {
         #region Factory Method
     
         /// <summary>
-        /// Create a new Track object.
+        /// Create a new Album object.
         /// </summary>
         /// <param name="id">Initial value of the Id property.</param>
-        /// <param name="path">Initial value of the Path property.</param>
-        public static Track CreateTrack(global::System.Int32 id, global::System.String path)
+        /// <param name="title">Initial value of the Title property.</param>
+        public static Album CreateAlbum(global::System.Int64 id, global::System.String title)
         {
-            Track track = new Track();
-            track.Id = id;
-            track.Path = path;
-            return track;
+            Album album = new Album();
+            album.Id = id;
+            album.Title = title;
+            return album;
         }
 
         #endregion
@@ -131,7 +186,7 @@ namespace Howler.Core.Database
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Int32 Id
+        public global::System.Int64 Id
         {
             get
             {
@@ -149,9 +204,238 @@ namespace Howler.Core.Database
                 }
             }
         }
-        private global::System.Int32 _Id;
-        partial void OnIdChanging(global::System.Int32 value);
+        private global::System.Int64 _Id;
+        partial void OnIdChanging(global::System.Int64 value);
         partial void OnIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Title
+        {
+            get
+            {
+                return _Title;
+            }
+            set
+            {
+                OnTitleChanging(value);
+                ReportPropertyChanging("Title");
+                _Title = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("Title");
+                OnTitleChanged();
+            }
+        }
+        private global::System.String _Title;
+        partial void OnTitleChanging(global::System.String value);
+        partial void OnTitleChanged();
+
+        #endregion
+    
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "TrackAlbum", "Track")]
+        public EntityCollection<Track> Track
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Track>("Collection.TrackAlbum", "Track");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Track>("Collection.TrackAlbum", "Track", value);
+                }
+            }
+        }
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "AlbumArtist", "Artist")]
+        public EntityCollection<Artist> Artists
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Artist>("Collection.AlbumArtist", "Artist");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Artist>("Collection.AlbumArtist", "Artist", value);
+                }
+            }
+        }
+
+        #endregion
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="Collection", Name="Artist")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class Artist : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new Artist object.
+        /// </summary>
+        /// <param name="name">Initial value of the Name property.</param>
+        /// <param name="id">Initial value of the Id property.</param>
+        public static Artist CreateArtist(global::System.String name, global::System.Int64 id)
+        {
+            Artist artist = new Artist();
+            artist.Name = name;
+            artist.Id = id;
+            return artist;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Name
+        {
+            get
+            {
+                return _Name;
+            }
+            set
+            {
+                OnNameChanging(value);
+                ReportPropertyChanging("Name");
+                _Name = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("Name");
+                OnNameChanged();
+            }
+        }
+        private global::System.String _Name;
+        partial void OnNameChanging(global::System.String value);
+        partial void OnNameChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 Id
+        {
+            get
+            {
+                return _Id;
+            }
+            set
+            {
+                if (_Id != value)
+                {
+                    OnIdChanging(value);
+                    ReportPropertyChanging("Id");
+                    _Id = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Id");
+                    OnIdChanged();
+                }
+            }
+        }
+        private global::System.Int64 _Id;
+        partial void OnIdChanging(global::System.Int64 value);
+        partial void OnIdChanged();
+
+        #endregion
+    
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "TrackArtist", "Track")]
+        public EntityCollection<Track> Track
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Track>("Collection.TrackArtist", "Track");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Track>("Collection.TrackArtist", "Track", value);
+                }
+            }
+        }
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "AlbumArtist", "Album")]
+        public EntityCollection<Album> Album
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Album>("Collection.AlbumArtist", "Album");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Album>("Collection.AlbumArtist", "Album", value);
+                }
+            }
+        }
+
+        #endregion
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="Collection", Name="Track")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class Track : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new Track object.
+        /// </summary>
+        /// <param name="path">Initial value of the Path property.</param>
+        /// <param name="id">Initial value of the Id property.</param>
+        public static Track CreateTrack(global::System.String path, global::System.Int64 id)
+        {
+            Track track = new Track();
+            track.Path = path;
+            track.Id = id;
+            return track;
+        }
+
+        #endregion
+        #region Primitive Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -176,9 +460,123 @@ namespace Howler.Core.Database
         private global::System.String _Path;
         partial void OnPathChanging(global::System.String value);
         partial void OnPathChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String Title
+        {
+            get
+            {
+                return _Title;
+            }
+            set
+            {
+                OnTitleChanging(value);
+                ReportPropertyChanging("Title");
+                _Title = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("Title");
+                OnTitleChanged();
+            }
+        }
+        private global::System.String _Title;
+        partial void OnTitleChanging(global::System.String value);
+        partial void OnTitleChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 Id
+        {
+            get
+            {
+                return _Id;
+            }
+            set
+            {
+                if (_Id != value)
+                {
+                    OnIdChanging(value);
+                    ReportPropertyChanging("Id");
+                    _Id = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Id");
+                    OnIdChanged();
+                }
+            }
+        }
+        private global::System.Int64 _Id;
+        partial void OnIdChanging(global::System.Int64 value);
+        partial void OnIdChanged();
 
         #endregion
     
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "TrackArtist", "Artist")]
+        public EntityCollection<Artist> Artists
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Artist>("Collection.TrackArtist", "Artist");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Artist>("Collection.TrackArtist", "Artist", value);
+                }
+            }
+        }
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "TrackAlbum", "Album")]
+        public Album Album
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<Album>("Collection.TrackAlbum", "Album").Value;
+            }
+            set
+            {
+                ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<Album>("Collection.TrackAlbum", "Album").Value = value;
+            }
+        }
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [BrowsableAttribute(false)]
+        [DataMemberAttribute()]
+        public EntityReference<Album> AlbumReference
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<Album>("Collection.TrackAlbum", "Album");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedReference<Album>("Collection.TrackAlbum", "Album", value);
+                }
+            }
+        }
+
+        #endregion
     }
 
     #endregion

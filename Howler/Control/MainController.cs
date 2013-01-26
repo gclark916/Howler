@@ -7,19 +7,23 @@ namespace Howler.Control
 {
     class MainController
     {
-        MainWindow window;
-        Collection collection;
+        MainWindow Window;
+        Collection Collection;
+        TracksNodeViewController TracksNodeViewController;
 
         MainController()
         {
-            collection = new Collection();
+            Collection = new Collection();
+            Collection.ImportDirectory("F:\\Google Music\\");
 
-            window = new MainWindow();
-            window.Show();
+            TracksNodeViewController = new TracksNodeViewController(Collection);
 
-            window.DeleteEvent += (object o, DeleteEventArgs args) => { Application.Quit(); };
+            Window = new MainWindow();
+            Window.DeleteEvent += (object o, DeleteEventArgs args) => { Application.Quit(); };
 
-            collection.ImportDirectory("F:\\Music\\");
+            Window.Add(TracksNodeViewController.View);
+
+            Window.ShowAll();
         }
 
         public static void Main(string[] args)
