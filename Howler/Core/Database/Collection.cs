@@ -125,7 +125,6 @@ namespace Howler.Core.Database
 
                         db.Artists.AddObject(newArtist);
                     }
-                    //db.SaveChanges(SaveOptions.None);
                 }
 
                 IEnumerable<string> fileAlbumArtistNames = file.Tag.AlbumArtists
@@ -144,14 +143,15 @@ namespace Howler.Core.Database
                         && album.Artists.All(a => fileAlbumArtistNames.Any(s => s.CompareTo(a.Name) == 0))
                         && fileAlbumArtistNames.All(s => album.Artists.Any(a => a.Name.CompareTo(s) == 0)));
 
+                Album trackAlbum = null;
                 if (matchingAlbumsInDatabase.Count() == 0)
                 {
-                    Album newAlbum = new Album
+                    trackAlbum = new Album
                     {
                         Title = file.Tag.Album
                     };
 
-                    IEnumerable<Artist> albumArtists = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | 
+                    IEnumerable<Artist> albumArtists = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added |
                         EntityState.Modified | EntityState.Unchanged)
                         .Select(obj => obj.Entity)
                         .OfType<Artist>()
@@ -159,18 +159,22 @@ namespace Howler.Core.Database
 
                     foreach (Artist albumArtist in albumArtists)
                     {
-                        newAlbum.Artists.Add(albumArtist);
+                        trackAlbum.Artists.Add(albumArtist);
                     }
 
-                    db.Albums.AddObject(newAlbum);
-                    //Store.SaveChanges(SaveOptions.None);
+                    db.Albums.AddObject(trackAlbum);
+                }
+                else
+                {
+                    trackAlbum = matchingAlbumsInDatabase.First();
                 }
 
                 // Add track
                 Track newTrack = new Track
                 {
                     Path = filePath,
-                    Title = file.Tag.Title
+                    Title = file.Tag.Title,
+                    Album = trackAlbum
                 };
 
 

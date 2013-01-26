@@ -12,4 +12,17 @@ namespace Howler.Gui
         {
         }
     }
+
+    class TracksCellRenderer : Gtk.CellRendererText
+    {
+        public TracksCellRenderer()
+            : base()
+        {
+            Ellipsize = Pango.EllipsizeMode.End;
+            Size = 1;
+            Font = "Segoe UI";
+            FixedHeightFromFont = 0;
+            Ypad = 0;
+        }
+    }
 }
