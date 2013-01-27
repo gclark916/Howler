@@ -193,13 +193,13 @@ namespace Howler.Core.Database
         /// <summary>
         /// Create a new Album object.
         /// </summary>
-        /// <param name="id">Initial value of the Id property.</param>
         /// <param name="title">Initial value of the Title property.</param>
-        public static Album CreateAlbum(global::System.Int64 id, global::System.String title)
+        /// <param name="artistsHash">Initial value of the ArtistsHash property.</param>
+        public static Album CreateAlbum(global::System.String title, global::System.String artistsHash)
         {
             Album album = new Album();
-            album.Id = id;
             album.Title = title;
+            album.ArtistsHash = artistsHash;
             return album;
         }
 
@@ -211,33 +211,6 @@ namespace Howler.Core.Database
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Int64 Id
-        {
-            get
-            {
-                return _Id;
-            }
-            set
-            {
-                if (_Id != value)
-                {
-                    OnIdChanging(value);
-                    ReportPropertyChanging("Id");
-                    _Id = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("Id");
-                    OnIdChanged();
-                }
-            }
-        }
-        private global::System.Int64 _Id;
-        partial void OnIdChanging(global::System.Int64 value);
-        partial void OnIdChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
         public global::System.String Title
         {
             get
@@ -246,11 +219,14 @@ namespace Howler.Core.Database
             }
             set
             {
-                OnTitleChanging(value);
-                ReportPropertyChanging("Title");
-                _Title = StructuralObject.SetValidValue(value, false);
-                ReportPropertyChanged("Title");
-                OnTitleChanged();
+                if (_Title != value)
+                {
+                    OnTitleChanging(value);
+                    ReportPropertyChanging("Title");
+                    _Title = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Title");
+                    OnTitleChanged();
+                }
             }
         }
         private global::System.String _Title;
@@ -328,6 +304,33 @@ namespace Howler.Core.Database
         private global::System.String _MusicBrainzId;
         partial void OnMusicBrainzIdChanging(global::System.String value);
         partial void OnMusicBrainzIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String ArtistsHash
+        {
+            get
+            {
+                return _ArtistsHash;
+            }
+            set
+            {
+                if (_ArtistsHash != value)
+                {
+                    OnArtistsHashChanging(value);
+                    ReportPropertyChanging("ArtistsHash");
+                    _ArtistsHash = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("ArtistsHash");
+                    OnArtistsHashChanged();
+                }
+            }
+        }
+        private global::System.String _ArtistsHash;
+        partial void OnArtistsHashChanging(global::System.String value);
+        partial void OnArtistsHashChanged();
 
         #endregion
     
@@ -635,7 +638,8 @@ namespace Howler.Core.Database
         /// <param name="channelCount">Initial value of the ChannelCount property.</param>
         /// <param name="sampleRate">Initial value of the SampleRate property.</param>
         /// <param name="bitsPerSample">Initial value of the BitsPerSample property.</param>
-        public static Track CreateTrack(global::System.String path, global::System.Int64 id, global::System.DateTime dateAdded, global::System.Int64 bitrate, global::System.Int64 playcount, global::System.Int64 size, global::System.Int64 duration, global::System.Int64 channelCount, global::System.Int64 sampleRate, global::System.Int64 bitsPerSample)
+        /// <param name="tagLibHash">Initial value of the TagLibHash property.</param>
+        public static Track CreateTrack(global::System.String path, global::System.Int64 id, global::System.DateTime dateAdded, global::System.Int64 bitrate, global::System.Int64 playcount, global::System.Int64 size, global::System.Int64 duration, global::System.Int64 channelCount, global::System.Int64 sampleRate, global::System.Int64 bitsPerSample, global::System.String tagLibHash)
         {
             Track track = new Track();
             track.Path = path;
@@ -648,6 +652,7 @@ namespace Howler.Core.Database
             track.ChannelCount = channelCount;
             track.SampleRate = sampleRate;
             track.BitsPerSample = bitsPerSample;
+            track.TagLibHash = tagLibHash;
             return track;
         }
 
@@ -1088,6 +1093,30 @@ namespace Howler.Core.Database
         private global::System.Int64 _BitsPerSample;
         partial void OnBitsPerSampleChanging(global::System.Int64 value);
         partial void OnBitsPerSampleChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String TagLibHash
+        {
+            get
+            {
+                return _TagLibHash;
+            }
+            set
+            {
+                OnTagLibHashChanging(value);
+                ReportPropertyChanging("TagLibHash");
+                _TagLibHash = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("TagLibHash");
+                OnTagLibHashChanged();
+            }
+        }
+        private global::System.String _TagLibHash;
+        partial void OnTagLibHashChanging(global::System.String value);
+        partial void OnTagLibHashChanged();
 
         #endregion
     

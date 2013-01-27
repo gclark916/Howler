@@ -23,6 +23,7 @@ namespace Howler.Control
             View = new Gtk.ScrolledWindow();
             Gtk.TreeView treeView = new Gtk.TreeView();
             treeView.HeadersClickable = true;
+            treeView.EnableTreeLines = true;
 
             AddTextColumn(t => t.Title, "Title", treeView);
             AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), "Artist", treeView);

@@ -1,6 +1,6 @@
 
 -- --------------------------------------------------
--- Date Created: 01/26/2013 16:43:29
+-- Date Created: 01/27/2013 02:38:18
 -- compatible SQLite
 -- Generated from EDMX file: C:\Users\Greg\documents\visual studio 2010\Projects\Howler\Howler\Core\Database\Collection.edmx
 -- --------------------------------------------------
@@ -46,11 +46,13 @@ CREATE TABLE [Tracks] (
     [ChannelCount] integer   NOT NULL ,
     [SampleRate] integer   NOT NULL ,
     [BitsPerSample] integer   NOT NULL ,
-    [Album_Id] integer   NULL 
+    [TagLibHash] nvarchar(2147483647)   NOT NULL ,
+    [Album_Title] nvarchar(2147483647)   NULL ,
+    [Album_ArtistsHash] nvarchar(2147483647)   NULL 
 			
 		,CONSTRAINT [FK_TrackAlbum]
-    		FOREIGN KEY ([Album_Id])
-    		REFERENCES [Albums] ([Id])					
+    		FOREIGN KEY ([Album_Title], [Album_ArtistsHash])
+    		REFERENCES [Albums] ([Title], [ArtistsHash])					
     		
 			);
 
@@ -63,12 +65,13 @@ CREATE TABLE [Artists] (
 
 -- Creating table 'Albums'
 CREATE TABLE [Albums] (
-    [Id] integer PRIMARY KEY AUTOINCREMENT  NOT NULL ,
     [Title] nvarchar(2147483647)   NOT NULL ,
     [Disc] integer   NULL ,
     [TotalDiscs] integer   NULL ,
-    [MusicBrainzId] nvarchar(2147483647)   NULL 
-);
+    [MusicBrainzId] nvarchar(2147483647)   NULL ,
+    [ArtistsHash] nvarchar(2147483647)   NOT NULL 
+ , PRIMARY KEY ([Title], [ArtistsHash])	
+		);
 
 -- Creating table 'Genres'
 CREATE TABLE [Genres] (
@@ -94,13 +97,14 @@ CREATE TABLE [TrackArtist] (
 
 -- Creating table 'AlbumArtist'
 CREATE TABLE [AlbumArtist] (
-    [Album_Id] integer   NOT NULL ,
+    [Album_Title] nvarchar(2147483647)   NOT NULL ,
+    [Album_ArtistsHash] nvarchar(2147483647)   NOT NULL ,
     [Artists_Id] integer   NOT NULL 
- , PRIMARY KEY ([Album_Id], [Artists_Id])	
+ , PRIMARY KEY ([Album_Title], [Album_ArtistsHash], [Artists_Id])	
 					
 		,CONSTRAINT [FK_AlbumArtist_Album]
-    		FOREIGN KEY ([Album_Id])
-    		REFERENCES [Albums] ([Id])					
+    		FOREIGN KEY ([Album_Title], [Album_ArtistsHash])
+    		REFERENCES [Albums] ([Title], [ArtistsHash])					
     		
 						
 		,CONSTRAINT [FK_AlbumArtist_Artist]

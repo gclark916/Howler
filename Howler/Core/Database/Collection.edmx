@@ -64,7 +64,9 @@
     <Property Name="ChannelCount" Type="integer" Nullable="false" />
     <Property Name="SampleRate" Type="integer" Nullable="false" />
     <Property Name="BitsPerSample" Type="integer" Nullable="false" />
-    <Property Name="Album_Id" Type="integer" Nullable="true" />
+    <Property Name="TagLibHash" Type="nvarchar" Nullable="false" />
+    <Property Name="Album_Title" Type="nvarchar" Nullable="true" />
+    <Property Name="Album_ArtistsHash" Type="nvarchar" Nullable="true" />
   </EntityType>
   <EntityType Name="Artists">
     <Key>
@@ -76,13 +78,14 @@
   </EntityType>
   <EntityType Name="Albums">
     <Key>
-      <PropertyRef Name="Id" />
+      <PropertyRef Name="Title" />
+      <PropertyRef Name="ArtistsHash" />
     </Key>
-    <Property Name="Id" Type="integer" StoreGeneratedPattern="Identity" Nullable="false" />
     <Property Name="Title" Type="nvarchar" Nullable="false" />
     <Property Name="Disc" Type="integer" Nullable="true" />
     <Property Name="TotalDiscs" Type="integer" Nullable="true" />
     <Property Name="MusicBrainzId" Type="nvarchar" Nullable="true" />
+    <Property Name="ArtistsHash" Type="nvarchar" Nullable="false" />
   </EntityType>
   <EntityType Name="Genres">
     <Key>
@@ -100,10 +103,12 @@
   </EntityType>
   <EntityType Name="AlbumArtist">
     <Key>
-      <PropertyRef Name="Album_Id" />
+      <PropertyRef Name="Album_Title" />
+      <PropertyRef Name="Album_ArtistsHash" />
       <PropertyRef Name="Artists_Id" />
     </Key>
-    <Property Name="Album_Id" Type="integer" Nullable="false" />
+    <Property Name="Album_Title" Type="nvarchar" Nullable="false" />
+    <Property Name="Album_ArtistsHash" Type="nvarchar" Nullable="false" />
     <Property Name="Artists_Id" Type="integer" Nullable="false" />
   </EntityType>
   <EntityType Name="TrackGenre">
@@ -119,10 +124,12 @@
     <End Role="Album" Type="Collection.Store.Albums" Multiplicity="0..1" />
     <ReferentialConstraint>
       <Principal Role="Album">
-        <PropertyRef Name="Id" />
+        <PropertyRef Name="Title" />
+        <PropertyRef Name="ArtistsHash" />
       </Principal>
       <Dependent Role="Track">
-        <PropertyRef Name="Album_Id" />
+        <PropertyRef Name="Album_Title" />
+        <PropertyRef Name="Album_ArtistsHash" />
       </Dependent>
     </ReferentialConstraint>
   </Association>
@@ -155,10 +162,12 @@
     <End Role="AlbumArtist" Type="Collection.Store.AlbumArtist" Multiplicity="*" />
     <ReferentialConstraint>
       <Principal Role="Album">
-        <PropertyRef Name="Id" />
+        <PropertyRef Name="Title" />
+        <PropertyRef Name="ArtistsHash" />
       </Principal>
       <Dependent Role="AlbumArtist">
-        <PropertyRef Name="Album_Id" />
+        <PropertyRef Name="Album_Title" />
+        <PropertyRef Name="Album_ArtistsHash" />
       </Dependent>
     </ReferentialConstraint>
   </Association>
@@ -249,6 +258,7 @@
           <Property Type="Int64" Name="ChannelCount" Nullable="false" />
           <Property Type="Int64" Name="SampleRate" Nullable="false" />
           <Property Type="Int64" Name="BitsPerSample" Nullable="false" />
+          <Property Type="String" Name="TagLibHash" Nullable="false" />
         </EntityType>
         <EntityType Name="Artist">
           <Key>
@@ -262,15 +272,16 @@
         </EntityType>
         <EntityType Name="Album">
           <Key>
-            <PropertyRef Name="Id" />
+            <PropertyRef Name="Title" />
+            <PropertyRef Name="ArtistsHash" />
           </Key>
-          <Property Type="Int64" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Type="String" Name="Title" Nullable="false" />
           <NavigationProperty Name="Track" Relationship="Collection.TrackAlbum" FromRole="Album" ToRole="Track" />
           <NavigationProperty Name="Artists" Relationship="Collection.AlbumArtist" FromRole="Album" ToRole="Artist" />
           <Property Type="Int64" Name="Disc" Nullable="true" />
           <Property Type="Int64" Name="TotalDiscs" Nullable="true" />
           <Property Type="String" Name="MusicBrainzId" Nullable="true" />
+          <Property Type="String" Name="ArtistsHash" Nullable="false" />
         </EntityType>
         <Association Name="TrackArtist">
           <End Type="Collection.Track" Role="Track" Multiplicity="*" />
@@ -322,6 +333,7 @@
           <ScalarProperty Name="ChannelCount" ColumnName="ChannelCount" />
           <ScalarProperty Name="SampleRate" ColumnName="SampleRate" />
           <ScalarProperty Name="BitsPerSample" ColumnName="BitsPerSample" />
+          <ScalarProperty Name="TagLibHash" ColumnName="TagLibHash" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -337,8 +349,8 @@
     <EntitySetMapping Name="Albums">
       <EntityTypeMapping TypeName="IsTypeOf(Collection.Album)">
         <MappingFragment StoreEntitySet="Albums">
-          <ScalarProperty Name="Id" ColumnName="Id" />
           <ScalarProperty Name="Title" ColumnName="Title" />
+          <ScalarProperty Name="ArtistsHash" ColumnName="ArtistsHash" />
           <ScalarProperty Name="Disc" ColumnName="Disc" />
           <ScalarProperty Name="TotalDiscs" ColumnName="TotalDiscs" />
           <ScalarProperty Name="MusicBrainzId" ColumnName="MusicBrainzId" />
@@ -362,16 +374,19 @@
     </AssociationSetMapping>
     <AssociationSetMapping Name="TrackAlbum" TypeName="Collection.TrackAlbum" StoreEntitySet="Tracks">
       <EndProperty Name="Album">
-        <ScalarProperty Name="Id" ColumnName="Album_Id" />
+        <ScalarProperty Name="Title" ColumnName="Album_Title" />
+        <ScalarProperty Name="ArtistsHash" ColumnName="Album_ArtistsHash" />
       </EndProperty>
       <EndProperty Name="Track">
         <ScalarProperty Name="Id" ColumnName="Id" />
       </EndProperty>
-      <Condition ColumnName="Album_Id" IsNull="false" />
+      <Condition ColumnName="Album_Title" IsNull="false" />
+      <Condition ColumnName="Album_ArtistsHash" IsNull="false" />
     </AssociationSetMapping>
     <AssociationSetMapping Name="AlbumArtist" TypeName="Collection.AlbumArtist" StoreEntitySet="AlbumArtist">
       <EndProperty Name="Album">
-        <ScalarProperty Name="Id" ColumnName="Album_Id" />
+        <ScalarProperty Name="Title" ColumnName="Album_Title" />
+        <ScalarProperty Name="ArtistsHash" ColumnName="Album_ArtistsHash" />
       </EndProperty>
       <EndProperty Name="Artist">
         <ScalarProperty Name="Id" ColumnName="Artists_Id" />
@@ -405,16 +420,16 @@
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
       <Diagram Name="Collection" >
-        <EntityTypeShape EntityType="Collection.Track" Width="1.5" PointX="4.625" PointY="3.125" Height="5.0571093749999978" />
+        <EntityTypeShape EntityType="Collection.Track" Width="1.5" PointX="4.625" PointY="3.125" Height="5.2494108072916656" />
         <EntityTypeShape EntityType="Collection.Artist" Width="1.5" PointX="4.625" PointY="0.5" Height="1.9802864583333335" />
-        <EntityTypeShape EntityType="Collection.Album" Width="1.5" PointX="1.875" PointY="1.25" Height="2.3648893229166661" />
+        <EntityTypeShape EntityType="Collection.Album" Width="1.5" PointX="1.875" PointY="1.25" Height="2.364889322916667" />
         <AssociationConnector Association="Collection.TrackArtist">
           <ConnectorPoint PointX="5.375" PointY="3.125" />
           <ConnectorPoint PointX="5.375" PointY="2.4802864583333335" />
         </AssociationConnector>
         <AssociationConnector Association="Collection.TrackAlbum">
-          <ConnectorPoint PointX="4.625" PointY="3.3699446614583328" />
-          <ConnectorPoint PointX="3.375" PointY="3.3699446614583328" />
+          <ConnectorPoint PointX="4.625" PointY="3.3699446614583337" />
+          <ConnectorPoint PointX="3.375" PointY="3.3699446614583337" />
         </AssociationConnector>
         <AssociationConnector Association="Collection.AlbumArtist">
           <ConnectorPoint PointX="3.375" PointY="1.8651432291666668" />
