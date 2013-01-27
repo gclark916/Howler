@@ -21,6 +21,7 @@ using System.Runtime.Serialization;
 [assembly: EdmRelationshipAttribute("Collection", "TrackArtist", "Track", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Track), "Artist", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Artist))]
 [assembly: EdmRelationshipAttribute("Collection", "TrackAlbum", "Track", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Track), "Album", System.Data.Metadata.Edm.RelationshipMultiplicity.ZeroOrOne, typeof(Howler.Core.Database.Album))]
 [assembly: EdmRelationshipAttribute("Collection", "AlbumArtist", "Album", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Album), "Artist", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Artist))]
+[assembly: EdmRelationshipAttribute("Collection", "TrackGenre", "Track", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Track), "Genre", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(Howler.Core.Database.Genre))]
 
 #endregion
 
@@ -119,6 +120,22 @@ namespace Howler.Core.Database
             }
         }
         private ObjectSet<Album> _Albums;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<Genre> Genres
+        {
+            get
+            {
+                if ((_Genres == null))
+                {
+                    _Genres = base.CreateObjectSet<Genre>("Genres");
+                }
+                return _Genres;
+            }
+        }
+        private ObjectSet<Genre> _Genres;
 
         #endregion
         #region AddTo Methods
@@ -145,6 +162,14 @@ namespace Howler.Core.Database
         public void AddToAlbums(Album album)
         {
             base.AddObject("Albums", album);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the Genres EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToGenres(Genre genre)
+        {
+            base.AddObject("Genres", genre);
         }
 
         #endregion
@@ -231,6 +256,78 @@ namespace Howler.Core.Database
         private global::System.String _Title;
         partial void OnTitleChanging(global::System.String value);
         partial void OnTitleChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int64> Disc
+        {
+            get
+            {
+                return _Disc;
+            }
+            set
+            {
+                OnDiscChanging(value);
+                ReportPropertyChanging("Disc");
+                _Disc = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Disc");
+                OnDiscChanged();
+            }
+        }
+        private Nullable<global::System.Int64> _Disc;
+        partial void OnDiscChanging(Nullable<global::System.Int64> value);
+        partial void OnDiscChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int64> TotalDiscs
+        {
+            get
+            {
+                return _TotalDiscs;
+            }
+            set
+            {
+                OnTotalDiscsChanging(value);
+                ReportPropertyChanging("TotalDiscs");
+                _TotalDiscs = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TotalDiscs");
+                OnTotalDiscsChanged();
+            }
+        }
+        private Nullable<global::System.Int64> _TotalDiscs;
+        partial void OnTotalDiscsChanging(Nullable<global::System.Int64> value);
+        partial void OnTotalDiscsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String MusicBrainzId
+        {
+            get
+            {
+                return _MusicBrainzId;
+            }
+            set
+            {
+                OnMusicBrainzIdChanging(value);
+                ReportPropertyChanging("MusicBrainzId");
+                _MusicBrainzId = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("MusicBrainzId");
+                OnMusicBrainzIdChanged();
+            }
+        }
+        private global::System.String _MusicBrainzId;
+        partial void OnMusicBrainzIdChanging(global::System.String value);
+        partial void OnMusicBrainzIdChanged();
 
         #endregion
     
@@ -359,6 +456,30 @@ namespace Howler.Core.Database
         private global::System.Int64 _Id;
         partial void OnIdChanging(global::System.Int64 value);
         partial void OnIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String MusicBrainzId
+        {
+            get
+            {
+                return _MusicBrainzId;
+            }
+            set
+            {
+                OnMusicBrainzIdChanging(value);
+                ReportPropertyChanging("MusicBrainzId");
+                _MusicBrainzId = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("MusicBrainzId");
+                OnMusicBrainzIdChanged();
+            }
+        }
+        private global::System.String _MusicBrainzId;
+        partial void OnMusicBrainzIdChanging(global::System.String value);
+        partial void OnMusicBrainzIdChanged();
 
         #endregion
     
@@ -414,6 +535,86 @@ namespace Howler.Core.Database
     /// <summary>
     /// No Metadata Documentation available.
     /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="Collection", Name="Genre")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class Genre : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new Genre object.
+        /// </summary>
+        /// <param name="name">Initial value of the Name property.</param>
+        public static Genre CreateGenre(global::System.String name)
+        {
+            Genre genre = new Genre();
+            genre.Name = name;
+            return genre;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Name
+        {
+            get
+            {
+                return _Name;
+            }
+            set
+            {
+                if (_Name != value)
+                {
+                    OnNameChanging(value);
+                    ReportPropertyChanging("Name");
+                    _Name = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Name");
+                    OnNameChanged();
+                }
+            }
+        }
+        private global::System.String _Name;
+        partial void OnNameChanging(global::System.String value);
+        partial void OnNameChanged();
+
+        #endregion
+    
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "TrackGenre", "Track")]
+        public EntityCollection<Track> Track
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Track>("Collection.TrackGenre", "Track");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Track>("Collection.TrackGenre", "Track", value);
+                }
+            }
+        }
+
+        #endregion
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
     [EdmEntityTypeAttribute(NamespaceName="Collection", Name="Track")]
     [Serializable()]
     [DataContractAttribute(IsReference=true)]
@@ -426,11 +627,27 @@ namespace Howler.Core.Database
         /// </summary>
         /// <param name="path">Initial value of the Path property.</param>
         /// <param name="id">Initial value of the Id property.</param>
-        public static Track CreateTrack(global::System.String path, global::System.Int64 id)
+        /// <param name="dateAdded">Initial value of the DateAdded property.</param>
+        /// <param name="bitrate">Initial value of the Bitrate property.</param>
+        /// <param name="playcount">Initial value of the Playcount property.</param>
+        /// <param name="size">Initial value of the Size property.</param>
+        /// <param name="duration">Initial value of the Duration property.</param>
+        /// <param name="channelCount">Initial value of the ChannelCount property.</param>
+        /// <param name="sampleRate">Initial value of the SampleRate property.</param>
+        /// <param name="bitsPerSample">Initial value of the BitsPerSample property.</param>
+        public static Track CreateTrack(global::System.String path, global::System.Int64 id, global::System.DateTime dateAdded, global::System.Int64 bitrate, global::System.Int64 playcount, global::System.Int64 size, global::System.Int64 duration, global::System.Int64 channelCount, global::System.Int64 sampleRate, global::System.Int64 bitsPerSample)
         {
             Track track = new Track();
             track.Path = path;
             track.Id = id;
+            track.DateAdded = dateAdded;
+            track.Bitrate = bitrate;
+            track.Playcount = playcount;
+            track.Size = size;
+            track.Duration = duration;
+            track.ChannelCount = channelCount;
+            track.SampleRate = sampleRate;
+            track.BitsPerSample = bitsPerSample;
             return track;
         }
 
@@ -511,6 +728,366 @@ namespace Howler.Core.Database
         private global::System.Int64 _Id;
         partial void OnIdChanging(global::System.Int64 value);
         partial void OnIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int64> TrackNumber
+        {
+            get
+            {
+                return _TrackNumber;
+            }
+            set
+            {
+                OnTrackNumberChanging(value);
+                ReportPropertyChanging("TrackNumber");
+                _TrackNumber = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TrackNumber");
+                OnTrackNumberChanged();
+            }
+        }
+        private Nullable<global::System.Int64> _TrackNumber;
+        partial void OnTrackNumberChanging(Nullable<global::System.Int64> value);
+        partial void OnTrackNumberChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> Date
+        {
+            get
+            {
+                return _Date;
+            }
+            set
+            {
+                OnDateChanging(value);
+                ReportPropertyChanging("Date");
+                _Date = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Date");
+                OnDateChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _Date;
+        partial void OnDateChanging(Nullable<global::System.DateTime> value);
+        partial void OnDateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int64> Rating
+        {
+            get
+            {
+                return _Rating;
+            }
+            set
+            {
+                OnRatingChanging(value);
+                ReportPropertyChanging("Rating");
+                _Rating = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Rating");
+                OnRatingChanged();
+            }
+        }
+        private Nullable<global::System.Int64> _Rating;
+        partial void OnRatingChanging(Nullable<global::System.Int64> value);
+        partial void OnRatingChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime DateAdded
+        {
+            get
+            {
+                return _DateAdded;
+            }
+            set
+            {
+                OnDateAddedChanging(value);
+                ReportPropertyChanging("DateAdded");
+                _DateAdded = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DateAdded");
+                OnDateAddedChanged();
+            }
+        }
+        private global::System.DateTime _DateAdded;
+        partial void OnDateAddedChanging(global::System.DateTime value);
+        partial void OnDateAddedChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 Bitrate
+        {
+            get
+            {
+                return _Bitrate;
+            }
+            set
+            {
+                OnBitrateChanging(value);
+                ReportPropertyChanging("Bitrate");
+                _Bitrate = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Bitrate");
+                OnBitrateChanged();
+            }
+        }
+        private global::System.Int64 _Bitrate;
+        partial void OnBitrateChanging(global::System.Int64 value);
+        partial void OnBitrateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 Playcount
+        {
+            get
+            {
+                return _Playcount;
+            }
+            set
+            {
+                OnPlaycountChanging(value);
+                ReportPropertyChanging("Playcount");
+                _Playcount = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Playcount");
+                OnPlaycountChanged();
+            }
+        }
+        private global::System.Int64 _Playcount;
+        partial void OnPlaycountChanging(global::System.Int64 value);
+        partial void OnPlaycountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> DateLastPlayed
+        {
+            get
+            {
+                return _DateLastPlayed;
+            }
+            set
+            {
+                OnDateLastPlayedChanging(value);
+                ReportPropertyChanging("DateLastPlayed");
+                _DateLastPlayed = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DateLastPlayed");
+                OnDateLastPlayedChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _DateLastPlayed;
+        partial void OnDateLastPlayedChanging(Nullable<global::System.DateTime> value);
+        partial void OnDateLastPlayedChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 Size
+        {
+            get
+            {
+                return _Size;
+            }
+            set
+            {
+                OnSizeChanging(value);
+                ReportPropertyChanging("Size");
+                _Size = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Size");
+                OnSizeChanged();
+            }
+        }
+        private global::System.Int64 _Size;
+        partial void OnSizeChanging(global::System.Int64 value);
+        partial void OnSizeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String Codec
+        {
+            get
+            {
+                return _Codec;
+            }
+            set
+            {
+                OnCodecChanging(value);
+                ReportPropertyChanging("Codec");
+                _Codec = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("Codec");
+                OnCodecChanged();
+            }
+        }
+        private global::System.String _Codec;
+        partial void OnCodecChanging(global::System.String value);
+        partial void OnCodecChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int64> BPM
+        {
+            get
+            {
+                return _BPM;
+            }
+            set
+            {
+                OnBPMChanging(value);
+                ReportPropertyChanging("BPM");
+                _BPM = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BPM");
+                OnBPMChanged();
+            }
+        }
+        private Nullable<global::System.Int64> _BPM;
+        partial void OnBPMChanging(Nullable<global::System.Int64> value);
+        partial void OnBPMChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String MusicBrainzId
+        {
+            get
+            {
+                return _MusicBrainzId;
+            }
+            set
+            {
+                OnMusicBrainzIdChanging(value);
+                ReportPropertyChanging("MusicBrainzId");
+                _MusicBrainzId = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("MusicBrainzId");
+                OnMusicBrainzIdChanged();
+            }
+        }
+        private global::System.String _MusicBrainzId;
+        partial void OnMusicBrainzIdChanging(global::System.String value);
+        partial void OnMusicBrainzIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 Duration
+        {
+            get
+            {
+                return _Duration;
+            }
+            set
+            {
+                OnDurationChanging(value);
+                ReportPropertyChanging("Duration");
+                _Duration = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Duration");
+                OnDurationChanged();
+            }
+        }
+        private global::System.Int64 _Duration;
+        partial void OnDurationChanging(global::System.Int64 value);
+        partial void OnDurationChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 ChannelCount
+        {
+            get
+            {
+                return _ChannelCount;
+            }
+            set
+            {
+                OnChannelCountChanging(value);
+                ReportPropertyChanging("ChannelCount");
+                _ChannelCount = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ChannelCount");
+                OnChannelCountChanged();
+            }
+        }
+        private global::System.Int64 _ChannelCount;
+        partial void OnChannelCountChanging(global::System.Int64 value);
+        partial void OnChannelCountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 SampleRate
+        {
+            get
+            {
+                return _SampleRate;
+            }
+            set
+            {
+                OnSampleRateChanging(value);
+                ReportPropertyChanging("SampleRate");
+                _SampleRate = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("SampleRate");
+                OnSampleRateChanged();
+            }
+        }
+        private global::System.Int64 _SampleRate;
+        partial void OnSampleRateChanging(global::System.Int64 value);
+        partial void OnSampleRateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int64 BitsPerSample
+        {
+            get
+            {
+                return _BitsPerSample;
+            }
+            set
+            {
+                OnBitsPerSampleChanging(value);
+                ReportPropertyChanging("BitsPerSample");
+                _BitsPerSample = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BitsPerSample");
+                OnBitsPerSampleChanged();
+            }
+        }
+        private global::System.Int64 _BitsPerSample;
+        partial void OnBitsPerSampleChanging(global::System.Int64 value);
+        partial void OnBitsPerSampleChanged();
 
         #endregion
     
@@ -572,6 +1149,28 @@ namespace Howler.Core.Database
                 if ((value != null))
                 {
                     ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedReference<Album>("Collection.TrackAlbum", "Album", value);
+                }
+            }
+        }
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("Collection", "TrackGenre", "Genre")]
+        public EntityCollection<Genre> Genres
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Genre>("Collection.TrackGenre", "Genre");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Genre>("Collection.TrackGenre", "Genre", value);
                 }
             }
         }

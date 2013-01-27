@@ -9,6 +9,7 @@ using System.Transactions;
 using System.Data.SQLite;
 using System.Data;
 using Howler.Core.Database;
+using Howler.Util;
 using TagLib;
 
 namespace Howler.Core.Database
@@ -19,6 +20,7 @@ namespace Howler.Core.Database
         {
             if (!System.IO.File.Exists("..\\howler.db"))
             {
+                
                 string fileName = "..\\howler.db";
                 SQLiteConnection.CreateFile(fileName);
                 SQLiteConnection conn = new SQLiteConnection();
@@ -38,7 +40,6 @@ namespace Howler.Core.Database
                 cmd.ExecuteNonQuery();
 
                 conn.Close();
-                conn.Dispose();
             }
         }
 
@@ -82,11 +83,13 @@ namespace Howler.Core.Database
 
         private void ImportFile(string filePath, CollectionContainer db)
         {
-            IEnumerable<Track> tracks = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added 
-                | EntityState.Modified | EntityState.Unchanged)
+            IEnumerable<Track> tracks = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
                 .Select(obj => obj.Entity)
                 .OfType<Track>()
-                .Where((t) => t.Path.CompareTo(filePath) == 0);
+                .Where(t => t.Path.CompareTo(filePath) == 0)
+                .Union(from Track in db.Tracks
+                       where Track.Path.CompareTo(filePath) == 0
+                       select Track);
 
             if (tracks != null && tracks.Count() > 0)
             {
@@ -98,21 +101,15 @@ namespace Howler.Core.Database
                 TagLib.File file = TagLib.File.Create(filePath);
 
                 // Add necessary artists
-                IEnumerable<string> albumArtistsAlreadyInDatabase = file.Tag.AlbumArtists
-                    .Intersect(db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
-                    .Select(obj => obj.Entity)
-                    .OfType<Artist>()
-                    .Select(a => a.Name));
-                IEnumerable<string> albumArtistsToAdd = file.Tag.AlbumArtists.Except(albumArtistsAlreadyInDatabase);
-
-                IEnumerable<string> artistsAlreadyInDatabase = file.Tag.Performers
-                    .Intersect(db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
-                    .Select(obj => obj.Entity)
-                    .OfType<Artist>()
-                    .Select(a => a.Name));
-                IEnumerable<string> artistsToAdd = file.Tag.Performers
-                    .Except(artistsAlreadyInDatabase)
-                    .Union(albumArtistsToAdd, StringComparer.Ordinal);
+                IEnumerable<string> artistsToAdd = file.Tag.AlbumArtists
+                    .Union(file.Tag.Performers)
+                    .Except(db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
+                        .Select(obj => obj.Entity)
+                        .OfType<Artist>()
+                        .Union(from Artist in db.Artists
+                               select Artist)
+                        .Select(a => a.Name)
+                        , StringComparer.Ordinal);
                 
                 if (artistsToAdd.Count() > 0)
                 {
@@ -127,21 +124,30 @@ namespace Howler.Core.Database
                     }
                 }
 
-                IEnumerable<string> fileAlbumArtistNames = file.Tag.AlbumArtists
-                    .Intersect(db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
-                    .Select(obj => obj.Entity)
-                    .OfType<Artist>()
-                    .Select(a => a.Name));
-
                 // Add album if necessary
+                HashSet<string> albumArtistNames = file.Tag.AlbumArtists
+                    .Intersect(db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
+                        .Select(obj => obj.Entity)
+                        .OfType<Artist>()
+                        .Union(from Artist in db.Artists
+                               select Artist)
+                        .Select(a => a.Name)
+                        , StringComparer.Ordinal)
+                    .ToHashSet(StringComparer.Ordinal);
+
                 // matchingAlbumsInDatabase.Count() should be 0 or 1
                 IEnumerable<Album> matchingAlbumsInDatabase = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added
                     | EntityState.Modified | EntityState.Unchanged)
                     .Select(obj => obj.Entity)
                     .OfType<Album>()
-                    .Where(album => album.Title.CompareTo(file.Tag.Album) == 0
-                        && album.Artists.All(a => fileAlbumArtistNames.Any(s => s.CompareTo(a.Name) == 0))
-                        && fileAlbumArtistNames.All(s => album.Artists.Any(a => a.Name.CompareTo(s) == 0)));
+                    .Where(album => album.Title.CompareTo(file.Tag.Album) == 0)
+                    .ToHashSet()
+                    .Where(album => albumArtistNames.SetEquals(album.Artists.Select(artist => artist.Name)))
+                    .Union(from Album in db.Albums
+                           where Album.Title.CompareTo(file.Tag.Album) == 0
+                           select Album)
+                    .ToHashSet()
+                    .Where(album => albumArtistNames.SetEquals(album.Artists.Select(artist => artist.Name)));
 
                 Album trackAlbum = null;
                 if (matchingAlbumsInDatabase.Count() == 0)
@@ -169,14 +175,44 @@ namespace Howler.Core.Database
                     trackAlbum = matchingAlbumsInDatabase.First();
                 }
 
+                // Add genres if necessary
+                IEnumerable<string> genreNamesToAdd = file.Tag.Genres.Except(db.ObjectStateManager.GetObjectStateEntries(EntityState.Added |
+                        EntityState.Modified | EntityState.Unchanged)
+                        .Select(obj => obj.Entity)
+                        .OfType<Genre>()
+                        .Select(g => g.Name), StringComparer.Ordinal);
+
+                foreach (string genreName in genreNamesToAdd)
+                {
+                    Genre genre = new Genre
+                    {
+                        Name = genreName
+                    };
+
+                    db.Genres.AddObject(genre);
+                }
+
                 // Add track
+                // TODO: need decoder for length
                 Track newTrack = new Track
                 {
                     Path = filePath,
                     Title = file.Tag.Title,
-                    Album = trackAlbum
+                    Album = trackAlbum,
+                    Duration = (Int64) file.Properties.Duration.TotalMilliseconds,
+                    DateAdded = new DateTime(),
+                    Bitrate = file.Properties.AudioBitrate,
+                    ChannelCount = file.Properties.AudioChannels,
+                    SampleRate = file.Properties.AudioSampleRate,
+                    BitsPerSample = file.Properties.BitsPerSample,
+                    Codec = file.Properties.Codecs.First().Description,
+                    Playcount = 0,
+                    Size = file.Length,
+                    TrackNumber = file.Tag.Track,
+                    Date = (file.Tag.Year == 0) ? (DateTime?)null : new DateTime((int)file.Tag.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    MusicBrainzId = file.Tag.MusicBrainzTrackId, 
+                    BPM = file.Tag.BeatsPerMinute == 0 ? (uint?) null : file.Tag.BeatsPerMinute
                 };
-
 
                 IEnumerable<Artist> trackArtists = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added |
                         EntityState.Modified | EntityState.Unchanged)
@@ -185,7 +221,16 @@ namespace Howler.Core.Database
                         .Where(artist => file.Tag.Performers.Any(s => s.CompareTo(artist.Name) == 0));
 
                 foreach (Artist trackArtist in trackArtists)
-                    newTrack.Artists.Add(trackArtist);                    
+                    newTrack.Artists.Add(trackArtist);
+
+                IEnumerable<Genre> trackGenres = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added |
+                        EntityState.Modified | EntityState.Unchanged)
+                        .Select(obj => obj.Entity)
+                        .OfType<Genre>()
+                        .Where(g => file.Tag.Genres.Contains(g.Name, StringComparer.Ordinal));
+
+                foreach (Genre genre in trackGenres)
+                    newTrack.Genres.Add(genre);
 
                 db.Tracks.AddObject(newTrack);
             }

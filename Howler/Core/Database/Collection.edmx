@@ -9,8 +9,10 @@
     <EntitySet Name="Tracks" EntityType="Collection.Store.Tracks" store:Type="Tables" Schema="dbo" />
     <EntitySet Name="Artists" EntityType="Collection.Store.Artists" store:Type="Tables" Schema="dbo" />
     <EntitySet Name="Albums" EntityType="Collection.Store.Albums" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="Genres" EntityType="Collection.Store.Genres" store:Type="Tables" Schema="dbo" />
     <EntitySet Name="TrackArtist" EntityType="Collection.Store.TrackArtist" store:Type="Tables" Schema="dbo" />
     <EntitySet Name="AlbumArtist" EntityType="Collection.Store.AlbumArtist" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="TrackGenre" EntityType="Collection.Store.TrackGenre" store:Type="Tables" Schema="dbo" />
     <AssociationSet Name="FK_TrackArtist_Track" Association="Collection.Store.FK_TrackArtist_Track">
       <End Role="Track" EntitySet="Tracks" />
       <End Role="TrackArtist" EntitySet="TrackArtist" />
@@ -31,6 +33,14 @@
       <End Role="Artist" EntitySet="Artists" />
       <End Role="AlbumArtist" EntitySet="AlbumArtist" />
     </AssociationSet>
+    <AssociationSet Name="FK_TrackGenre_Track" Association="Collection.Store.FK_TrackGenre_Track">
+      <End Role="Track" EntitySet="Tracks" />
+      <End Role="TrackGenre" EntitySet="TrackGenre" />
+    </AssociationSet>
+    <AssociationSet Name="FK_TrackGenre_Genre" Association="Collection.Store.FK_TrackGenre_Genre">
+      <End Role="Genre" EntitySet="Genres" />
+      <End Role="TrackGenre" EntitySet="TrackGenre" />
+    </AssociationSet>
   </EntityContainer>
   <EntityType Name="Tracks">
     <Key>
@@ -39,6 +49,21 @@
     <Property Name="Path" Type="nvarchar" Nullable="false" />
     <Property Name="Title" Type="nvarchar" Nullable="true" />
     <Property Name="Id" Type="integer" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="TrackNumber" Type="integer" Nullable="true" />
+    <Property Name="Date" Type="datetime" Nullable="true" />
+    <Property Name="Rating" Type="integer" Nullable="true" />
+    <Property Name="DateAdded" Type="datetime" Nullable="false" />
+    <Property Name="Bitrate" Type="integer" Nullable="false" />
+    <Property Name="Playcount" Type="integer" Nullable="false" />
+    <Property Name="DateLastPlayed" Type="datetime" Nullable="true" />
+    <Property Name="Size" Type="integer" Nullable="false" />
+    <Property Name="Codec" Type="nvarchar" Nullable="true" />
+    <Property Name="BPM" Type="integer" Nullable="true" />
+    <Property Name="MusicBrainzId" Type="nvarchar" Nullable="true" />
+    <Property Name="Duration" Type="integer" Nullable="false" />
+    <Property Name="ChannelCount" Type="integer" Nullable="false" />
+    <Property Name="SampleRate" Type="integer" Nullable="false" />
+    <Property Name="BitsPerSample" Type="integer" Nullable="false" />
     <Property Name="Album_Id" Type="integer" Nullable="true" />
   </EntityType>
   <EntityType Name="Artists">
@@ -47,6 +72,7 @@
     </Key>
     <Property Name="Name" Type="nvarchar" Nullable="false" />
     <Property Name="Id" Type="integer" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="MusicBrainzId" Type="nvarchar" Nullable="true" />
   </EntityType>
   <EntityType Name="Albums">
     <Key>
@@ -54,6 +80,15 @@
     </Key>
     <Property Name="Id" Type="integer" StoreGeneratedPattern="Identity" Nullable="false" />
     <Property Name="Title" Type="nvarchar" Nullable="false" />
+    <Property Name="Disc" Type="integer" Nullable="true" />
+    <Property Name="TotalDiscs" Type="integer" Nullable="true" />
+    <Property Name="MusicBrainzId" Type="nvarchar" Nullable="true" />
+  </EntityType>
+  <EntityType Name="Genres">
+    <Key>
+      <PropertyRef Name="Name" />
+    </Key>
+    <Property Name="Name" Type="nvarchar" Nullable="false" />
   </EntityType>
   <EntityType Name="TrackArtist">
     <Key>
@@ -70,6 +105,14 @@
     </Key>
     <Property Name="Album_Id" Type="integer" Nullable="false" />
     <Property Name="Artists_Id" Type="integer" Nullable="false" />
+  </EntityType>
+  <EntityType Name="TrackGenre">
+    <Key>
+      <PropertyRef Name="Track_Id" />
+      <PropertyRef Name="Genres_Name" />
+    </Key>
+    <Property Name="Track_Id" Type="integer" Nullable="false" />
+    <Property Name="Genres_Name" Type="nvarchar" Nullable="false" />
   </EntityType>
   <Association Name="TrackAlbum">
     <End Role="Track" Type="Collection.Store.Tracks" Multiplicity="*" />
@@ -131,6 +174,30 @@
       </Dependent>
     </ReferentialConstraint>
   </Association>
+  <Association Name="FK_TrackGenre_Track">
+    <End Role="Track" Type="Collection.Store.Tracks" Multiplicity="1" />
+    <End Role="TrackGenre" Type="Collection.Store.TrackGenre" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Track">
+        <PropertyRef Name="Id" />
+      </Principal>
+      <Dependent Role="TrackGenre">
+        <PropertyRef Name="Track_Id" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_TrackGenre_Genre">
+    <End Role="TrackGenre" Type="Collection.Store.TrackGenre" Multiplicity="*" />
+    <End Role="Genre" Type="Collection.Store.Genres" Multiplicity="1" />
+    <ReferentialConstraint>
+      <Principal Role="Genre">
+        <PropertyRef Name="Name" />
+      </Principal>
+      <Dependent Role="TrackGenre">
+        <PropertyRef Name="Genres_Name" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
 </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -151,6 +218,11 @@
             <End Role="Album" EntitySet="Albums" />
             <End Role="Artist" EntitySet="Artists" />
           </AssociationSet>
+          <EntitySet Name="Genres" EntityType="Collection.Genre" />
+          <AssociationSet Name="TrackGenre" Association="Collection.TrackGenre">
+            <End Role="Track" EntitySet="Tracks" />
+            <End Role="Genre" EntitySet="Genres" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="Track">
           <Key>
@@ -161,6 +233,22 @@
           <NavigationProperty Name="Artists" Relationship="Collection.TrackArtist" FromRole="Track" ToRole="Artist" />
           <NavigationProperty Name="Album" Relationship="Collection.TrackAlbum" FromRole="Track" ToRole="Album" />
           <Property Type="Int64" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="Int64" Name="TrackNumber" Nullable="true" />
+          <Property Type="DateTime" Name="Date" Nullable="true" />
+          <Property Type="Int64" Name="Rating" Nullable="true" />
+          <Property Type="DateTime" Name="DateAdded" Nullable="false" />
+          <Property Type="Int64" Name="Bitrate" Nullable="false" />
+          <Property Type="Int64" Name="Playcount" Nullable="false" />
+          <Property Type="DateTime" Name="DateLastPlayed" Nullable="true" />
+          <Property Type="Int64" Name="Size" Nullable="false" />
+          <Property Type="String" Name="Codec" Nullable="true" />
+          <Property Type="Int64" Name="BPM" Nullable="true" />
+          <NavigationProperty Name="Genres" Relationship="Collection.TrackGenre" FromRole="Track" ToRole="Genre" />
+          <Property Type="String" Name="MusicBrainzId" Nullable="true" />
+          <Property Type="Int64" Name="Duration" Nullable="false" />
+          <Property Type="Int64" Name="ChannelCount" Nullable="false" />
+          <Property Type="Int64" Name="SampleRate" Nullable="false" />
+          <Property Type="Int64" Name="BitsPerSample" Nullable="false" />
         </EntityType>
         <EntityType Name="Artist">
           <Key>
@@ -170,6 +258,7 @@
           <NavigationProperty Name="Track" Relationship="Collection.TrackArtist" FromRole="Artist" ToRole="Track" />
           <NavigationProperty Name="Album" Relationship="Collection.AlbumArtist" FromRole="Artist" ToRole="Album" />
           <Property Type="Int64" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="MusicBrainzId" Nullable="true" />
         </EntityType>
         <EntityType Name="Album">
           <Key>
@@ -179,6 +268,9 @@
           <Property Type="String" Name="Title" Nullable="false" />
           <NavigationProperty Name="Track" Relationship="Collection.TrackAlbum" FromRole="Album" ToRole="Track" />
           <NavigationProperty Name="Artists" Relationship="Collection.AlbumArtist" FromRole="Album" ToRole="Artist" />
+          <Property Type="Int64" Name="Disc" Nullable="true" />
+          <Property Type="Int64" Name="TotalDiscs" Nullable="true" />
+          <Property Type="String" Name="MusicBrainzId" Nullable="true" />
         </EntityType>
         <Association Name="TrackArtist">
           <End Type="Collection.Track" Role="Track" Multiplicity="*" />
@@ -192,6 +284,17 @@
           <End Type="Collection.Album" Role="Album" Multiplicity="*" />
           <End Type="Collection.Artist" Role="Artist" Multiplicity="*" />
         </Association>
+        <EntityType Name="Genre">
+          <Key>
+            <PropertyRef Name="Name" />
+          </Key>
+          <Property Type="String" Name="Name" Nullable="false" annotation:StoreGeneratedPattern="None" />
+          <NavigationProperty Name="Track" Relationship="Collection.TrackGenre" FromRole="Genre" ToRole="Track" />
+        </EntityType>
+        <Association Name="TrackGenre">
+          <End Type="Collection.Track" Role="Track" Multiplicity="*" />
+          <End Type="Collection.Genre" Role="Genre" Multiplicity="*" />
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -204,6 +307,21 @@
           <ScalarProperty Name="Id" ColumnName="Id" />
           <ScalarProperty Name="Path" ColumnName="Path" />
           <ScalarProperty Name="Title" ColumnName="Title" />
+          <ScalarProperty Name="TrackNumber" ColumnName="TrackNumber" />
+          <ScalarProperty Name="Date" ColumnName="Date" />
+          <ScalarProperty Name="Rating" ColumnName="Rating" />
+          <ScalarProperty Name="DateAdded" ColumnName="DateAdded" />
+          <ScalarProperty Name="Bitrate" ColumnName="Bitrate" />
+          <ScalarProperty Name="Playcount" ColumnName="Playcount" />
+          <ScalarProperty Name="DateLastPlayed" ColumnName="DateLastPlayed" />
+          <ScalarProperty Name="Size" ColumnName="Size" />
+          <ScalarProperty Name="Codec" ColumnName="Codec" />
+          <ScalarProperty Name="BPM" ColumnName="BPM" />
+          <ScalarProperty Name="MusicBrainzId" ColumnName="MusicBrainzId" />
+          <ScalarProperty Name="Duration" ColumnName="Duration" />
+          <ScalarProperty Name="ChannelCount" ColumnName="ChannelCount" />
+          <ScalarProperty Name="SampleRate" ColumnName="SampleRate" />
+          <ScalarProperty Name="BitsPerSample" ColumnName="BitsPerSample" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -212,6 +330,7 @@
         <MappingFragment StoreEntitySet="Artists">
           <ScalarProperty Name="Id" ColumnName="Id" />
           <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="MusicBrainzId" ColumnName="MusicBrainzId" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -220,6 +339,16 @@
         <MappingFragment StoreEntitySet="Albums">
           <ScalarProperty Name="Id" ColumnName="Id" />
           <ScalarProperty Name="Title" ColumnName="Title" />
+          <ScalarProperty Name="Disc" ColumnName="Disc" />
+          <ScalarProperty Name="TotalDiscs" ColumnName="TotalDiscs" />
+          <ScalarProperty Name="MusicBrainzId" ColumnName="MusicBrainzId" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="Genres">
+      <EntityTypeMapping TypeName="IsTypeOf(Collection.Genre)">
+        <MappingFragment StoreEntitySet="Genres">
+          <ScalarProperty Name="Name" ColumnName="Name" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -248,6 +377,14 @@
         <ScalarProperty Name="Id" ColumnName="Artists_Id" />
       </EndProperty>
     </AssociationSetMapping>
+    <AssociationSetMapping Name="TrackGenre" TypeName="Collection.TrackGenre" StoreEntitySet="TrackGenre">
+      <EndProperty Name="Track">
+        <ScalarProperty Name="Id" ColumnName="Track_Id" />
+      </EndProperty>
+      <EndProperty Name="Genre">
+        <ScalarProperty Name="Name" ColumnName="Genres_Name" />
+      </EndProperty>
+    </AssociationSetMapping>
   </EntityContainerMapping>
 </Mapping></edmx:Mappings>
   </edmx:Runtime>
@@ -268,21 +405,25 @@
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
       <Diagram Name="Collection" >
-        <EntityTypeShape EntityType="Collection.Track" Width="1.5" PointX="4.625" PointY="2.75" Height="1.9802864583333326" />
-        <EntityTypeShape EntityType="Collection.Artist" Width="1.5" PointX="4.625" PointY="0.5" Height="1.7879850260416665" />
-        <EntityTypeShape EntityType="Collection.Album" Width="1.5" PointX="1.875" PointY="1.25" Height="1.4033821614583331" />
+        <EntityTypeShape EntityType="Collection.Track" Width="1.5" PointX="4.625" PointY="3.125" Height="5.0571093749999978" />
+        <EntityTypeShape EntityType="Collection.Artist" Width="1.5" PointX="4.625" PointY="0.5" Height="1.9802864583333335" />
+        <EntityTypeShape EntityType="Collection.Album" Width="1.5" PointX="1.875" PointY="1.25" Height="2.3648893229166661" />
         <AssociationConnector Association="Collection.TrackArtist">
-          <ConnectorPoint PointX="5.375" PointY="2.75" />
-          <ConnectorPoint PointX="5.375" PointY="2.2879850260416665" />
+          <ConnectorPoint PointX="5.375" PointY="3.125" />
+          <ConnectorPoint PointX="5.375" PointY="2.4802864583333335" />
         </AssociationConnector>
         <AssociationConnector Association="Collection.TrackAlbum">
-          <ConnectorPoint PointX="4.625" PointY="3.8841362421874992" />
-          <ConnectorPoint PointX="2.625" PointY="3.8841362421874992" />
-          <ConnectorPoint PointX="2.625" PointY="3.0379850260416661" />
+          <ConnectorPoint PointX="4.625" PointY="3.3699446614583328" />
+          <ConnectorPoint PointX="3.375" PointY="3.3699446614583328" />
         </AssociationConnector>
         <AssociationConnector Association="Collection.AlbumArtist">
-          <ConnectorPoint PointX="3.375" PointY="1.7689925130208333" />
-          <ConnectorPoint PointX="4.625" PointY="1.7689925130208333" />
+          <ConnectorPoint PointX="3.375" PointY="1.8651432291666668" />
+          <ConnectorPoint PointX="4.625" PointY="1.8651432291666668" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="Collection.Genre" Width="1.5" PointX="7.75" PointY="3.5" Height="1.2110807291666665" />
+        <AssociationConnector Association="Collection.TrackGenre">
+          <ConnectorPoint PointX="6.125" PointY="4.2016910807291667" />
+          <ConnectorPoint PointX="7.75" PointY="4.2016910807291667" />
         </AssociationConnector>
       </Diagram>
     </edmx:Diagrams>

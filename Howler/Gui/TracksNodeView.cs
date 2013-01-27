@@ -25,4 +25,19 @@ namespace Howler.Gui
             Ypad = 0;
         }
     }
+
+    class TracksTreeViewColumn : Gtk.TreeViewColumn
+    {
+        public TracksTreeViewColumn(string title)
+            : base()
+        {
+            Title = title;
+            Resizable = true;
+            Expand = false;
+            MinWidth = 10;
+            FixedWidth = 200;
+            Sizing = Gtk.TreeViewColumnSizing.Fixed;
+            Reorderable = true;
+        }
+    }
 }

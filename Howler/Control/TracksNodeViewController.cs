@@ -27,7 +27,12 @@ namespace Howler.Control
             AddTextColumn(t => t.Title, "Title", treeView);
             AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), "Artist", treeView);
             AddTextColumn(t => t.Album == null ? null : t.Album.Title, "Album", treeView);
-            AddTextColumn(t => t.Path, "Path", treeView);
+
+            IEnumerable<PropertyInfo> stringProperties = typeof(Track).GetProperties()
+                .Where(p => p.PropertyType.IsEquivalentTo(typeof(string)));
+
+            foreach (PropertyInfo property in stringProperties)
+                AddTextColumnUsingStringProperty(property, property.Name, treeView);
 
             Store = new Gtk.ListStore(typeof(Track));
 
@@ -45,13 +50,7 @@ namespace Howler.Control
 
         private void AddTextColumn(StringPropertySelector selector, string columnName, Gtk.TreeView treeView)
         {
-            Gtk.TreeViewColumn genericColumn = new Gtk.TreeViewColumn();
-            genericColumn.Title = columnName;
-            genericColumn.Resizable = true;
-            genericColumn.Expand = false;
-            genericColumn.MinWidth = 10;
-            genericColumn.FixedWidth = 200;
-            genericColumn.Sizing = Gtk.TreeViewColumnSizing.Fixed;
+            TracksTreeViewColumn genericColumn = new TracksTreeViewColumn(columnName);
 
             Gui.TracksCellRenderer pathCellTextRenderer = new Gui.TracksCellRenderer();
             genericColumn.PackStart(pathCellTextRenderer, true);
@@ -60,6 +59,22 @@ namespace Howler.Control
                 {
                     Track track = (Track)model.GetValue(iter, 0);
                     (cell as Gtk.CellRendererText).Text = selector.Invoke(track);
+                });
+
+            treeView.AppendColumn(genericColumn);
+        }
+
+        private void AddTextColumnUsingStringProperty(PropertyInfo property, string columnName, Gtk.TreeView treeView)
+        {
+            TracksTreeViewColumn genericColumn = new TracksTreeViewColumn(columnName);
+
+            Gui.TracksCellRenderer pathCellTextRenderer = new Gui.TracksCellRenderer();
+            genericColumn.PackStart(pathCellTextRenderer, true);
+            genericColumn.SetCellDataFunc(pathCellTextRenderer,
+                (Gtk.TreeViewColumn column, Gtk.CellRenderer cell, Gtk.TreeModel model, Gtk.TreeIter iter) =>
+                {
+                    Track track = (Track)model.GetValue(iter, 0);
+                    (cell as Gtk.CellRendererText).Text = (string)property.GetGetMethod().Invoke(track, null);
                 });
 
             treeView.AppendColumn(genericColumn);
