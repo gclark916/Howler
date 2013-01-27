@@ -192,13 +192,11 @@ namespace Howler.Core.Database
             track.Title = file.Tag.Title;
             track.Album = trackAlbum;
             track.Duration = (Int64)file.Properties.Duration.TotalMilliseconds;
-            track.DateAdded = new DateTime();
             track.Bitrate = file.Properties.AudioBitrate;
             track.ChannelCount = file.Properties.AudioChannels;
             track.SampleRate = file.Properties.AudioSampleRate;
             track.BitsPerSample = file.Properties.BitsPerSample;
             track.Codec = file.Properties.Codecs.First().Description;
-            track.Playcount = 0;
             track.Size = file.Length;
             track.TagLibHash = tagLibHash;
             track.TrackNumber = file.Tag.Track;
