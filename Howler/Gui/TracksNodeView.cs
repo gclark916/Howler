@@ -1,22 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Gtk;
 
 namespace Howler.Gui
 {
-    class TracksNodeView : Gtk.TreeView
+    class TracksNodeView : TreeView
     {
-        public TracksNodeView()
-            : base()
-        {
-        }
     }
 
-    class TracksCellRenderer : Gtk.CellRendererText
+    class TracksCellRenderer : CellRendererText
     {
         public TracksCellRenderer()
-            : base()
         {
             Ellipsize = Pango.EllipsizeMode.End;
             Size = 1;
@@ -26,17 +18,16 @@ namespace Howler.Gui
         }
     }
 
-    class TracksTreeViewColumn : Gtk.TreeViewColumn
+    class TracksTreeViewColumn : TreeViewColumn
     {
         public TracksTreeViewColumn(string title)
-            : base()
         {
             Title = title;
             Resizable = true;
             Expand = false;
             MinWidth = 10;
             FixedWidth = 200;
-            Sizing = Gtk.TreeViewColumnSizing.Fixed;
+            Sizing = TreeViewColumnSizing.Fixed;
             Reorderable = true;
         }
     }

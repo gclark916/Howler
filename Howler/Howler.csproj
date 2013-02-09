@@ -53,9 +53,6 @@
     <StartupObject>Howler.Control.MainController</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Devart.Data.Linq, Version=4.1.169.0, Culture=neutral, PublicKeyToken=09af7300eec23701, processorArchitecture=MSIL" />
-    <Reference Include="Devart.Data.SQLite, Version=4.4.164.0, Culture=neutral, PublicKeyToken=09af7300eec23701, processorArchitecture=MSIL" />
-    <Reference Include="Devart.Data.SQLite.Linq, Version=4.1.169.0, Culture=neutral, PublicKeyToken=09af7300eec23701, processorArchitecture=MSIL" />
     <Reference Include="EntityFramework">
       <HintPath>..\packages\EntityFramework.5.0.0\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
@@ -108,6 +105,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Collection.edmx</DependentUpon>
     </Compile>
+    <Compile Include="Core\Tagging\ID3v2Tagger.cs" />
+    <Compile Include="Core\Tagging\OggTagger.cs" />
+    <Compile Include="Core\Tagging\TagLibExtensions.cs" />
     <Compile Include="Gui\MainWindow.cs" />
     <Compile Include="Control\MainController.cs" />
     <Compile Include="Gui\TracksNodeView.cs" />

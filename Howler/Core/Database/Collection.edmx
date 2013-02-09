@@ -50,7 +50,7 @@
     <Property Name="Title" Type="nvarchar" Nullable="true" />
     <Property Name="Id" Type="integer" StoreGeneratedPattern="Identity" Nullable="false" />
     <Property Name="TrackNumber" Type="integer" Nullable="true" />
-    <Property Name="Date" Type="datetime" Nullable="true" />
+    <Property Name="Date" Type="nvarchar" Nullable="true" />
     <Property Name="Rating" Type="integer" Nullable="true" />
     <Property Name="DateAdded" Type="datetime" Nullable="false" />
     <Property Name="Bitrate" Type="integer" Nullable="false" />
@@ -243,7 +243,7 @@
           <NavigationProperty Name="Album" Relationship="Collection.TrackAlbum" FromRole="Track" ToRole="Album" />
           <Property Type="Int64" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Type="Int64" Name="TrackNumber" Nullable="true" />
-          <Property Type="DateTime" Name="Date" Nullable="true" />
+          <Property Type="String" Name="Date" Nullable="true" />
           <Property Type="Int64" Name="Rating" Nullable="true" />
           <Property Type="DateTime" Name="DateAdded" Nullable="false" />
           <Property Type="Int64" Name="Bitrate" Nullable="false" />

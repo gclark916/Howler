@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.IO;
 using System.Data.Common;
 using System.Data.Objects;
@@ -9,8 +9,8 @@ using System.Transactions;
 using System.Data.SQLite;
 using System.Data;
 using System.Security.Cryptography;
-using Howler.Core.Database;
 using Howler.Util;
+using Howler.Core.Tagging;
 using TagLib;
 
 namespace Howler.Core.Database
@@ -19,64 +19,64 @@ namespace Howler.Core.Database
     {
         public Collection()
         {
-            if (!System.IO.File.Exists("..\\howler.db"))
+            if (System.IO.File.Exists("..\\howler.db")) 
+                return;
+
+            string fileName = "..\\howler.db";
+            SQLiteConnection.CreateFile(fileName);
+            SQLiteConnection conn = new SQLiteConnection();
+            conn.ConnectionString = new DbConnectionStringBuilder
             {
-                
-                string fileName = "..\\howler.db";
-                SQLiteConnection.CreateFile(fileName);
-                SQLiteConnection conn = new SQLiteConnection();
-                conn.ConnectionString = new DbConnectionStringBuilder()
-                {
-                    {"Data Source", fileName},
-                    {"Version", "3"},
-                    {"FailIfMissing", "False"},
-                }.ConnectionString;
-                conn.Open();
+                {"Data Source", fileName},
+                {"Version", "3"},
+                {"FailIfMissing", "False"},
+            }.ConnectionString;
+            conn.Open();
 
-                FileInfo file = new FileInfo("C:\\Users\\Greg\\documents\\visual studio 2010\\Projects\\Howler\\Howler\\Core\\Database\\Collection.edmx.sql");
-                string script = file.OpenText().ReadToEnd();
+            FileInfo file = new FileInfo("C:\\Users\\Greg\\documents\\visual studio 2010\\Projects\\Howler\\Howler\\Core\\Database\\Collection.edmx.sql");
+            string script = file.OpenText().ReadToEnd();
 
-                SQLiteCommand cmd = conn.CreateCommand();
-                cmd.CommandText = script;
-                cmd.ExecuteNonQuery();
+            SQLiteCommand cmd = conn.CreateCommand();
+            cmd.CommandText = script;
+            cmd.ExecuteNonQuery();
 
-                conn.Close();
-            }
+            conn.Close();
+            conn.Dispose();
         }
 
         public void ImportDirectory(String path)
         {
-            if (Directory.Exists(path))
+            if (!Directory.Exists(path)) 
+                return;
+
+            string[] extensions = { ".mp3", ".m4a", ".flac" };
+            IEnumerable<string> newFiles = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).Where(s => extensions.Any(ext => ext == Path.GetExtension(s)));
+
+            using (CollectionContainer db = new CollectionContainer())
             {
-                string[] extensions = { ".mp3", ".m4a", ".flac" };
-                IEnumerable<string> newFiles = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).Where(s => extensions.Any(ext => ext == Path.GetExtension(s)));
-
-                using (CollectionContainer db = new CollectionContainer())
+                using (TransactionScope scope = new TransactionScope())
                 {
-                    using (TransactionScope scope = new TransactionScope())
+
+                    db.Connection.Open();
+
+                    foreach (string file in newFiles)
                     {
+                        ImportFile(file, db);
+                    }
 
-                        db.Connection.Open();
-
-                        foreach (string file in newFiles)
-                        {
-                            ImportFile(file, db);
-                        }
-
-                        try
-                        {
-                            db.SaveChanges(SaveOptions.None);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e);
-                        }
-                        finally
-                        {
-                            scope.Complete();
-                            db.AcceptAllChanges();
-                            db.Connection.Close();
-                        }
+                    try
+                    {
+                        db.SaveChanges(SaveOptions.None);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
+                    finally
+                    {
+                        scope.Complete();
+                        db.AcceptAllChanges();
+                        db.Connection.Close();
                     }
                 }
             }
@@ -84,23 +84,23 @@ namespace Howler.Core.Database
 
         private void ImportFile(string filePath, CollectionContainer db)
         {
-
             TagLib.File file = TagLib.File.Create(filePath);
             TagLib.Properties properties = file.Properties;
-            TagLib.Tag tag = file.Tag;
+            Tag tag = file.Tag;
+
             string[] tagLibStrings = 
-                {   file.Length.ToString(),
-                    properties.AudioBitrate.ToString(),
-                    properties.AudioChannels.ToString(),
-                    properties.AudioSampleRate.ToString(),
-                    properties.BitsPerSample.ToString(),
+                {   file.Length.ToString(CultureInfo.InvariantCulture),
+                    properties.AudioBitrate.ToString(CultureInfo.InvariantCulture),
+                    properties.AudioChannels.ToString(CultureInfo.InvariantCulture),
+                    properties.AudioSampleRate.ToString(CultureInfo.InvariantCulture),
+                    properties.BitsPerSample.ToString(CultureInfo.InvariantCulture),
                     String.Concat(properties.Codecs),
                     tag.Album,
                     String.Concat(tag.AlbumArtists),
-                    tag.BeatsPerMinute.ToString(),
+                    tag.BeatsPerMinute.ToString(CultureInfo.InvariantCulture),
                     tag.Comment,
-                    tag.Disc.ToString(),
-                    tag.DiscCount.ToString(),
+                    tag.Disc.ToString(CultureInfo.InvariantCulture),
+                    tag.DiscCount.ToString(CultureInfo.InvariantCulture),
                     String.Concat(tag.Genres),
                     tag.Lyrics,
                     tag.MusicBrainzArtistId,
@@ -109,36 +109,36 @@ namespace Howler.Core.Database
                     tag.MusicBrainzReleaseId,
                     String.Concat(tag.Performers),
                     tag.Title,
-                    tag.Track.ToString(),
-                    tag.TrackCount.ToString(),
-                    tag.Year.ToString() };
+                    tag.Track.ToString(CultureInfo.InvariantCulture),
+                    tag.TrackCount.ToString(CultureInfo.InvariantCulture),
+                    tag.GetDate(),
+                    tag.GetRating().ToString(CultureInfo.InvariantCulture)
+                };
 
-            MD5 md5 = System.Security.Cryptography.MD5.Create();
+            MD5 md5 = MD5.Create();
             string tagLibHash = md5.GetMd5Hash(String.Concat(tagLibStrings));
             
             IEnumerable<Track> tracksWithPath = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
                 .Select(obj => obj.Entity)
                 .OfType<Track>()
-                .Where(t => t.Path.CompareTo(filePath) == 0)
-                .Union(from Track in db.Tracks
-                       where Track.Path.CompareTo(filePath) == 0
-                       select Track);
+                .Where(t => System.String.Compare(t.Path, filePath, System.StringComparison.Ordinal) == 0)
+                .Union(from track in db.Tracks
+                       where System.String.Compare(track.Path, filePath, System.StringComparison.Ordinal) == 0
+                       select track)
+                .ToList();
 
-            if (tracksWithPath.Count() > 0)
+            if (tracksWithPath.Any())
             {
                 // File already exists in database
-                IEnumerable<Track> tracksWithPathAndHash = tracksWithPath.Where(t => t.TagLibHash.CompareTo(tagLibHash) == 0);
-                if (tracksWithPathAndHash.Count() > 0)
-                    // Hashes match, no updating needed
-                    return;
-                else
-                    updateTrackInDatabase(filePath, file, db, tagLibHash, tracksWithPathAndHash.First());
+                IEnumerable<Track> tracksWithPathAndHash = tracksWithPath.Where(t => String.Compare(t.TagLibHash, tagLibHash, StringComparison.Ordinal) == 0).ToList();
+                if (!tracksWithPathAndHash.Any())
+                    UpdateTrackInDatabase(filePath, file, db, tagLibHash, tracksWithPath.First());
             }
             else
-                addTrackToDatabase(filePath, file, db, tagLibHash);
+                AddTrackToDatabase(filePath, file, db, tagLibHash);
         }
 
-        private void addTrackToDatabase(string filePath, TagLib.File file, CollectionContainer db, string tagLibHash)
+        private void AddTrackToDatabase(string filePath, TagLib.File file, CollectionContainer db, string tagLibHash)
         {
             Album trackAlbum = addNonTrackEntitiesAndReturnAlbum(file, db);
 
@@ -158,9 +158,10 @@ namespace Howler.Core.Database
                 Size = file.Length,
                 TagLibHash = tagLibHash,
                 TrackNumber = file.Tag.Track,
-                Date = (file.Tag.Year == 0) ? (DateTime?)null : new DateTime((int)file.Tag.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Date = file.Tag.GetDate(),
                 MusicBrainzId = file.Tag.MusicBrainzTrackId,
-                BPM = file.Tag.BeatsPerMinute == 0 ? (uint?)null : file.Tag.BeatsPerMinute
+                BPM = file.Tag.BeatsPerMinute == 0 ? (uint?)null : file.Tag.BeatsPerMinute,
+                Rating = file.Tag.GetRating()
             };
 
             IEnumerable<Artist> trackArtists = GetTrackArtistsForTag(db, file.Tag); 
@@ -173,10 +174,12 @@ namespace Howler.Core.Database
             foreach (Genre genre in trackGenres)
                 newTrack.Genres.Add(genre);
 
+            file.Dispose();
+
             db.Tracks.AddObject(newTrack);
         }
 
-        private void updateTrackInDatabase(string filePath, TagLib.File file, CollectionContainer db, string tagLibHash, Track track)
+        private void UpdateTrackInDatabase(string filePath, TagLib.File file, CollectionContainer db, string tagLibHash, Track track)
         {
             Album trackAlbum = addNonTrackEntitiesAndReturnAlbum(file, db);
 
@@ -200,9 +203,10 @@ namespace Howler.Core.Database
             track.Size = file.Length;
             track.TagLibHash = tagLibHash;
             track.TrackNumber = file.Tag.Track;
-            track.Date = (file.Tag.Year == 0) ? (DateTime?)null : new DateTime((int)file.Tag.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            track.Date = file.Tag.GetDate();
             track.MusicBrainzId = file.Tag.MusicBrainzTrackId;
             track.BPM = file.Tag.BeatsPerMinute == 0 ? (uint?)null : file.Tag.BeatsPerMinute;
+            track.Rating = file.Tag.GetRating();
 
             foreach (Artist trackArtist in artistsToRemove)
                 track.Artists.Remove(trackArtist);
@@ -223,10 +227,10 @@ namespace Howler.Core.Database
                      EntityState.Modified | EntityState.Unchanged)
                      .Select(obj => obj.Entity)
                      .OfType<Genre>()
-                     .Where(g => tag.Genres.Contains(g.Name, StringComparer.Ordinal))
-                     .Union(from Genre in db.Genres
-                            where tag.Genres.Contains(Genre.Name, StringComparer.Ordinal)
-                            select Genre);
+                     .Where(g => tag.Genres.Any(s => String.Compare(g.Name, s, StringComparison.Ordinal) == 0))
+                     .Union(from genre in db.Genres
+                            where tag.Genres.Any(s => String.Compare(genre.Name, s, StringComparison.Ordinal) == 0)
+                            select genre);
         }
 
         private IEnumerable<Artist> GetTrackArtistsForTag(CollectionContainer db, Tag tag)
@@ -235,9 +239,9 @@ namespace Howler.Core.Database
                 EntityState.Modified | EntityState.Unchanged)
                 .Select(obj => obj.Entity)
                 .OfType<Artist>()
-                .Where(artist => tag.Performers.Any(s => s.CompareTo(artist.Name) == 0))
-                .Union(from Artist in db.Artists
-                       select Artist);
+                .Where(artist => tag.Performers.Any(s => String.Compare(s, artist.Name, StringComparison.Ordinal) == 0))
+                .Union(from artist in db.Artists
+                       select artist);
         }
 
         private Album addNonTrackEntitiesAndReturnAlbum(TagLib.File file, CollectionContainer db)
@@ -247,12 +251,13 @@ namespace Howler.Core.Database
                     .Except(db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
                         .Select(obj => obj.Entity)
                         .OfType<Artist>()
-                        .Union(from Artist in db.Artists
-                               select Artist)
+                        .Union(from artist in db.Artists
+                               select artist)
                         .Select(a => a.Name)
-                        , StringComparer.Ordinal);
+                        , StringComparer.Ordinal)
+                    .ToList();
 
-            if (artistsToAdd.Count() > 0)
+            if (artistsToAdd.Any())
             {
                 foreach (string artistName in artistsToAdd)
                 {
@@ -267,7 +272,7 @@ namespace Howler.Core.Database
 
             // Add album if necessary
             string orderedAlbumArtists = String.Concat(file.Tag.AlbumArtists.OrderBy(s => s, StringComparer.Ordinal));
-            MD5 albumMd5 = System.Security.Cryptography.MD5.Create();
+            MD5 albumMd5 = MD5.Create();
             string albumArtistsHash = albumMd5.GetMd5Hash(orderedAlbumArtists);
 
             // matchingAlbumsInDatabase.Count() should be 0 or 1
@@ -275,14 +280,16 @@ namespace Howler.Core.Database
                 | EntityState.Modified | EntityState.Unchanged)
                 .Select(obj => obj.Entity)
                 .OfType<Album>()
-                .Where(album => album.Title.CompareTo(file.Tag.Album) == 0 && album.ArtistsHash.CompareTo(albumArtistsHash) == 0)
-                .Union(from Album in db.Albums
-                       where Album.Title.CompareTo(file.Tag.Album) == 0
-                       && Album.ArtistsHash.CompareTo(albumArtistsHash) == 0
-                       select Album);
+                .Where(album => String.Compare(album.Title, file.Tag.Album, StringComparison.Ordinal) == 0 
+                    && String.Compare(album.ArtistsHash, albumArtistsHash, StringComparison.Ordinal) == 0)
+                .Union(from album in db.Albums
+                       where String.Compare(album.Title, file.Tag.Album, StringComparison.Ordinal) == 0
+                       && String.Compare(album.ArtistsHash, albumArtistsHash, StringComparison.Ordinal) == 0
+                       select album)
+                .ToList();
 
-            Album trackAlbum = null;
-            if (matchingAlbumsInDatabase.Count() == 0)
+            Album trackAlbum;
+            if (!matchingAlbumsInDatabase.Any())
             {
                 trackAlbum = new Album
                 {
@@ -294,9 +301,9 @@ namespace Howler.Core.Database
                     EntityState.Modified | EntityState.Unchanged)
                     .Select(obj => obj.Entity)
                     .OfType<Artist>()
-                    .Union(from Artist in db.Artists
-                           select Artist)
-                    .Where(artist => file.Tag.AlbumArtists.Any(s => s.CompareTo(artist.Name) == 0));
+                    .Union(from artist in db.Artists
+                           select artist)
+                    .Where(artist => file.Tag.AlbumArtists.Any(s => String.Compare(s, artist.Name, StringComparison.Ordinal) == 0));
 
                 foreach (Artist albumArtist in albumArtists)
                 {
@@ -333,8 +340,8 @@ namespace Howler.Core.Database
         public IEnumerable<Track> GetTracks()
         {
             CollectionContainer db = new CollectionContainer();
-            IEnumerable<Track> tracks = from Track in db.Tracks
-                                        select Track;
+            IEnumerable<Track> tracks = from track in db.Tracks
+                                        select track;
             return tracks;
         }
     }

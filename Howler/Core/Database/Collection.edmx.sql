@@ -1,8 +1,8 @@
 
 -- --------------------------------------------------
--- Date Created: 01/27/2013 02:38:18
+-- Date Created: 02/08/2013 21:53:55
 -- compatible SQLite
--- Generated from EDMX file: C:\Users\Greg\documents\visual studio 2010\Projects\Howler\Howler\Core\Database\Collection.edmx
+-- Generated from EDMX file: C:\Users\Greg\Documents\Visual Studio 2010\Projects\Howler\Howler\Core\Database\Collection.edmx
 -- --------------------------------------------------
 -- Dropping existing tables
 -- --------------------------------------------------
@@ -32,7 +32,7 @@ CREATE TABLE [Tracks] (
     [Title] nvarchar(2147483647)   NULL ,
     [Id] integer PRIMARY KEY AUTOINCREMENT  NOT NULL ,
     [TrackNumber] integer   NULL ,
-    [Date] datetime   NULL ,
+    [Date] nvarchar(2147483647)   NULL ,
     [Rating] integer   NULL ,
     [DateAdded] datetime   NOT NULL ,
     [Bitrate] integer   NOT NULL ,

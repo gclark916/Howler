@@ -8,12 +8,13 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.ComponentModel;
+using System.Data.EntityClient;
 using System.Data.Objects;
 using System.Data.Objects.DataClasses;
-using System.Data.EntityClient;
-using System.ComponentModel;
-using System.Xml.Serialization;
+using System.Linq;
 using System.Runtime.Serialization;
+using System.Xml.Serialization;
 
 [assembly: EdmSchemaAttribute()]
 #region EDM Relationship Metadata
@@ -138,6 +139,7 @@ namespace Howler.Core.Database
         private ObjectSet<Genre> _Genres;
 
         #endregion
+
         #region AddTo Methods
     
         /// <summary>
@@ -173,11 +175,11 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
     }
-    
 
     #endregion
-    
+
     #region Entities
     
     /// <summary>
@@ -204,6 +206,7 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -333,6 +336,7 @@ namespace Howler.Core.Database
         partial void OnArtistsHashChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -381,6 +385,7 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
     }
     
     /// <summary>
@@ -407,6 +412,7 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -485,6 +491,7 @@ namespace Howler.Core.Database
         partial void OnMusicBrainzIdChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -533,6 +540,7 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
     }
     
     /// <summary>
@@ -557,6 +565,7 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -587,6 +596,7 @@ namespace Howler.Core.Database
         partial void OnNameChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -613,6 +623,7 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
     }
     
     /// <summary>
@@ -657,6 +668,7 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -763,7 +775,7 @@ namespace Howler.Core.Database
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
         [DataMemberAttribute()]
-        public Nullable<global::System.DateTime> Date
+        public global::System.String Date
         {
             get
             {
@@ -773,13 +785,13 @@ namespace Howler.Core.Database
             {
                 OnDateChanging(value);
                 ReportPropertyChanging("Date");
-                _Date = StructuralObject.SetValidValue(value);
+                _Date = StructuralObject.SetValidValue(value, true);
                 ReportPropertyChanged("Date");
                 OnDateChanged();
             }
         }
-        private Nullable<global::System.DateTime> _Date;
-        partial void OnDateChanging(Nullable<global::System.DateTime> value);
+        private global::System.String _Date;
+        partial void OnDateChanging(global::System.String value);
         partial void OnDateChanged();
     
         /// <summary>
@@ -1119,6 +1131,7 @@ namespace Howler.Core.Database
         partial void OnTagLibHashChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -1205,8 +1218,10 @@ namespace Howler.Core.Database
         }
 
         #endregion
+
     }
 
     #endregion
+
     
 }

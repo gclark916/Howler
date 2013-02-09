@@ -1,5 +1,4 @@
-﻿using System;
-using Gtk;
+﻿using Gtk;
 using Howler.Gui;
 using Howler.Core.Database;
 
@@ -7,23 +6,23 @@ namespace Howler.Control
 {
     class MainController
     {
-        MainWindow Window;
-        Collection Collection;
-        TracksNodeViewController TracksNodeViewController;
+        readonly MainWindow _window;
+        readonly Collection _collection;
+        readonly TracksNodeViewController _tracksNodeViewController;
 
         MainController()
         {
-            Collection = new Collection();
-            Collection.ImportDirectory("F:\\Google Music\\");
+            _collection = new Collection();
+            _collection.ImportDirectory("F:\\Google Music\\");
 
-            TracksNodeViewController = new TracksNodeViewController(Collection);
+            _tracksNodeViewController = new TracksNodeViewController(_collection);
 
-            Window = new MainWindow();
-            Window.DeleteEvent += (object o, DeleteEventArgs args) => { Application.Quit(); };
+            _window = new MainWindow();
+            _window.DeleteEvent += (object o, DeleteEventArgs args) => Application.Quit();
 
-            Window.Add(TracksNodeViewController.View);
+            _window.Add(_tracksNodeViewController.View);
 
-            Window.ShowAll();
+            _window.ShowAll();
         }
 
         public static void Main(string[] args)
