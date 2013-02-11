@@ -10,47 +10,69 @@ namespace Howler.Control
 {
     class TracksNodeViewController
     {
-        public ScrolledWindow View { get; set; }
-        ListStore Store;
-        Collection Collection;
+        public ScrolledWindow View { get; private set;  }
+        private readonly TracksListView _tracksListView;
+        private readonly ListStore _unfilteredModel;
 
         delegate string StringPropertySelector(Track track);
 
+        public delegate bool TrackFilter(Track track);
+
         public TracksNodeViewController(Collection collection)
         {
-            Collection = collection;
-            View = new ScrolledWindow();
-            TreeView treeView = new TreeView();
-            treeView.HeadersClickable = true;
-            treeView.RulesHint = true;
+            _tracksListView = new TracksListView
+                {
+                    HeadersClickable = true, 
+                    RulesHint = true
+                };
 
-            AddTextColumn(t => t.Title, "Title", treeView);
-            AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), "Artist", treeView);
-            AddTextColumn(t => t.Album == null ? null : t.Album.Title, "Album", treeView);
+            AddTextColumn(t => t.Title, "Title", _tracksListView);
+            AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), "Artist", _tracksListView);
+            AddTextColumn(t => t.Album == null ? null : t.Album.Title, "Album", _tracksListView);
+            AddTextColumn(t =>
+                {
+                    TimeSpan timeSpan = TimeSpan.FromMilliseconds(t.Duration);
+                    string length = t.Duration >= 1000*60*60 ? 
+                                        String.Format("{0}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds) 
+                                        : String.Format("{0}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
+                    return length;
+                }, "Length", _tracksListView);
 
             IEnumerable<PropertyInfo> stringProperties = typeof(Track).GetProperties()
                 .Where(p => p.PropertyType.IsEquivalentTo(typeof(string)));
 
             foreach (PropertyInfo property in stringProperties)
-                AddTextColumnUsingStringProperty(property, property.Name, treeView);
+                AddTextColumnUsingStringProperty(property, property.Name, _tracksListView);
 
-            Store = new ListStore(typeof(Track));
+            _unfilteredModel = new ListStore(typeof(Track));
 
-            IEnumerable<Track> tracks = collection.GetTracks();
-            foreach (Track track in tracks)
+            foreach (Track track in collection.GetTracks())
             {
-                Store.AppendValues(track);
+                _unfilteredModel.AppendValues(track);
             }
 
-            treeView.Model = Store;
+            _tracksListView.Model = _unfilteredModel;
 
-            View.Add(treeView);
+            View = new ScrolledWindow {_tracksListView};
         }
 
+        public void FilterStore(TrackFilter trackFilter)
+        {
+            TreeModelFilter filter = new TreeModelFilter(_unfilteredModel, null)
+                {
+                    VisibleFunc = delegate(TreeModel model, TreeIter iter)
+                        {
+                            Track track = (Track) model.GetValue(iter, 0);
+                            return trackFilter(track);
+                        }
+                };
+
+            _tracksListView.Model = filter;
+        }
 
         private void AddTextColumn(StringPropertySelector selector, string columnName, TreeView treeView)
         {
-            TracksTreeViewColumn genericColumn = new TracksTreeViewColumn(columnName);
+            TracksListViewColumn genericColumn = new TracksListViewColumn(columnName);
 
             TracksCellRenderer pathCellTextRenderer = new TracksCellRenderer();
             genericColumn.PackStart(pathCellTextRenderer, true);
@@ -66,7 +88,7 @@ namespace Howler.Control
 
         private void AddTextColumnUsingStringProperty(PropertyInfo property, string columnName, TreeView treeView)
         {
-            TracksTreeViewColumn genericColumn = new TracksTreeViewColumn(columnName);
+            TracksListViewColumn genericColumn = new TracksListViewColumn(columnName);
 
             TracksCellRenderer pathCellTextRenderer = new TracksCellRenderer();
             genericColumn.PackStart(pathCellTextRenderer, true);

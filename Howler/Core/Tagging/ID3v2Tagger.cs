@@ -306,7 +306,7 @@ namespace Howler.Core.Tagging
             foreach (TagLib.Id3v2.TextInformationFrame frame in frames)
             {
                 foreach (string text in frame.Text)
-                    if (frame.Text.Length > date.Length)
+                    if (text.Length > date.Length)
                         date = text;
             }
 

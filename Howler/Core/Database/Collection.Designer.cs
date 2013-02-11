@@ -1011,7 +1011,7 @@ namespace Howler.Core.Database
         partial void OnMusicBrainzIdChanged();
     
         /// <summary>
-        /// No Metadata Documentation available.
+        /// Length of the track in milliseconds.
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]

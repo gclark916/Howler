@@ -254,7 +254,11 @@
           <Property Type="Int64" Name="BPM" Nullable="true" />
           <NavigationProperty Name="Genres" Relationship="Collection.TrackGenre" FromRole="Track" ToRole="Genre" />
           <Property Type="String" Name="MusicBrainzId" Nullable="true" />
-          <Property Type="Int64" Name="Duration" Nullable="false" />
+          <Property Type="Int64" Name="Duration" Nullable="false" >
+            <Documentation>
+              <Summary>Length of the track in milliseconds.</Summary>
+            </Documentation>
+          </Property>
           <Property Type="Int64" Name="ChannelCount" Nullable="false" />
           <Property Type="Int64" Name="SampleRate" Nullable="false" />
           <Property Type="Int64" Name="BitsPerSample" Nullable="false" />

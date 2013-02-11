@@ -11,8 +11,8 @@ namespace Howler.Gui
             {
                 Child.ShowAll();
             }
-            DefaultWidth = 400;
-            DefaultHeight = 300;
+            DefaultWidth = 1280;
+            DefaultHeight = 800;
             Show();
         }
     }

@@ -2,7 +2,7 @@
 
 namespace Howler.Gui
 {
-    class TracksNodeView : TreeView
+    class TracksListView : TreeView
     {
     }
 
@@ -18,9 +18,9 @@ namespace Howler.Gui
         }
     }
 
-    class TracksTreeViewColumn : TreeViewColumn
+    class TracksListViewColumn : TreeViewColumn
     {
-        public TracksTreeViewColumn(string title)
+        public TracksListViewColumn(string title)
         {
             Title = title;
             Resizable = true;

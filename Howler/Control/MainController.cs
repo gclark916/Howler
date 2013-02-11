@@ -6,23 +6,30 @@ namespace Howler.Control
 {
     class MainController
     {
-        readonly MainWindow _window;
-        readonly Collection _collection;
-        readonly TracksNodeViewController _tracksNodeViewController;
+        private readonly MainWindow _window;
+        private readonly Collection _collection;
+        private readonly TracksNodeViewController _tracksNodeViewController;
+        private readonly SourceTreeViewController _sourceTreeViewController;
 
         MainController()
         {
             _collection = new Collection();
-            _collection.ImportDirectory("F:\\Google Music\\");
+            //_collection.ImportDirectory("F:\\Google Music\\");
+            //_collection.ImportDirectory("F:\\Music\\Death Grips\\Exmilitary");
 
             _tracksNodeViewController = new TracksNodeViewController(_collection);
+            _sourceTreeViewController = new SourceTreeViewController(_tracksNodeViewController, _collection);
 
             _window = new MainWindow();
-            _window.DeleteEvent += (object o, DeleteEventArgs args) => Application.Quit();
+            _window.DeleteEvent += (o, args) => Application.Quit();
 
-            _window.Add(_tracksNodeViewController.View);
+            HPaned hPaned = new HPaned();
+            hPaned.Add1(_sourceTreeViewController.View);
+            hPaned.Add2(_tracksNodeViewController.View);
+            _window.Add(hPaned);
 
             _window.ShowAll();
+            _window.ResizeChildren();
         }
 
         public static void Main(string[] args)

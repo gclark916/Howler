@@ -98,6 +98,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Control\SourceTreeViewController.cs" />
     <Compile Include="Control\TracksNodeViewController.cs" />
     <Compile Include="Core\Database\Collection.cs" />
     <Compile Include="Core\Database\Collection.Designer.cs">
@@ -110,7 +111,8 @@
     <Compile Include="Core\Tagging\TagLibExtensions.cs" />
     <Compile Include="Gui\MainWindow.cs" />
     <Compile Include="Control\MainController.cs" />
-    <Compile Include="Gui\TracksNodeView.cs" />
+    <Compile Include="Gui\SourceTreeView.cs" />
+    <Compile Include="Gui\TracksListView.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\Base\LocalTrack.cs" />
     <Compile Include="Properties\Settings.Designer.cs">

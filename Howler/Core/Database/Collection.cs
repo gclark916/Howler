@@ -17,31 +17,41 @@ namespace Howler.Core.Database
 {
     class Collection
     {
+        private readonly CollectionContainer _collectionContainer;
+
         public Collection()
         {
-            if (System.IO.File.Exists("..\\howler.db")) 
-                return;
-
-            string fileName = "..\\howler.db";
-            SQLiteConnection.CreateFile(fileName);
-            SQLiteConnection conn = new SQLiteConnection();
-            conn.ConnectionString = new DbConnectionStringBuilder
+            if (System.IO.File.Exists("..\\howler.db"))
             {
-                {"Data Source", fileName},
-                {"Version", "3"},
-                {"FailIfMissing", "False"},
-            }.ConnectionString;
-            conn.Open();
+                _collectionContainer = new CollectionContainer();
+                return;
+            }
 
-            FileInfo file = new FileInfo("C:\\Users\\Greg\\documents\\visual studio 2010\\Projects\\Howler\\Howler\\Core\\Database\\Collection.edmx.sql");
-            string script = file.OpenText().ReadToEnd();
+            const string fileName = "..\\howler.db";
+            SQLiteConnection.CreateFile(fileName);
+            using (SQLiteConnection conn = new SQLiteConnection())
+            {
+                conn.ConnectionString = new DbConnectionStringBuilder
+                    {
+                        {"Data Source", fileName},
+                        {"Version", "3"},
+                        {"FailIfMissing", "False"},
+                    }.ConnectionString;
+                conn.Open();
 
-            SQLiteCommand cmd = conn.CreateCommand();
-            cmd.CommandText = script;
-            cmd.ExecuteNonQuery();
+                FileInfo file =
+                    new FileInfo(
+                        "C:\\Users\\Greg\\documents\\visual studio 2010\\Projects\\Howler\\Howler\\Core\\Database\\Collection.edmx.sql");
+                string script = file.OpenText().ReadToEnd();
 
-            conn.Close();
-            conn.Dispose();
+                SQLiteCommand cmd = conn.CreateCommand();
+                cmd.CommandText = script;
+                cmd.ExecuteNonQuery();
+
+                conn.Close();
+            }
+
+            _collectionContainer = new CollectionContainer();
         }
 
         public void ImportDirectory(String path)
@@ -50,9 +60,10 @@ namespace Howler.Core.Database
                 return;
 
             string[] extensions = { ".mp3", ".m4a", ".flac" };
-            IEnumerable<string> newFiles = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).Where(s => extensions.Any(ext => ext == Path.GetExtension(s)));
+            IEnumerable<string> newFiles = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
+                .Where(s => extensions.Any(ext => String.Compare(ext, Path.GetExtension(s), StringComparison.OrdinalIgnoreCase) == 0));
 
-            using (CollectionContainer db = new CollectionContainer())
+            using (CollectionContainer db = _collectionContainer)
             {
                 using (TransactionScope scope = new TransactionScope())
                 {
@@ -121,9 +132,9 @@ namespace Howler.Core.Database
             IEnumerable<Track> tracksWithPath = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
                 .Select(obj => obj.Entity)
                 .OfType<Track>()
-                .Where(t => System.String.Compare(t.Path, filePath, System.StringComparison.Ordinal) == 0)
+                .Where(t => String.Compare(t.Path, filePath, StringComparison.Ordinal) == 0)
                 .Union(from track in db.Tracks
-                       where System.String.Compare(track.Path, filePath, System.StringComparison.Ordinal) == 0
+                       where String.Compare(track.Path, filePath, StringComparison.Ordinal) == 0
                        select track)
                 .ToList();
 
@@ -297,15 +308,12 @@ namespace Howler.Core.Database
                     ArtistsHash = albumArtistsHash
                 };
 
-                IEnumerable<Artist> albumArtists = db.ObjectStateManager.GetObjectStateEntries(EntityState.Added |
-                    EntityState.Modified | EntityState.Unchanged)
+                foreach (Artist albumArtist in file.Tag.AlbumArtists.Select(albumArtistString => db.ObjectStateManager
+                    .GetObjectStateEntries(EntityState.Added | EntityState.Modified | EntityState.Unchanged)
                     .Select(obj => obj.Entity)
                     .OfType<Artist>()
-                    .Union(from artist in db.Artists
-                           select artist)
-                    .Where(artist => file.Tag.AlbumArtists.Any(s => String.Compare(s, artist.Name, StringComparison.Ordinal) == 0));
-
-                foreach (Artist albumArtist in albumArtists)
+                    .Union(db.Artists)
+                    .FirstOrDefault(artist => String.Compare(artist.Name, albumArtistString, StringComparison.Ordinal) == 0)))
                 {
                     trackAlbum.Artists.Add(albumArtist);
                 }
@@ -322,6 +330,7 @@ namespace Howler.Core.Database
                     EntityState.Modified | EntityState.Unchanged)
                     .Select(obj => obj.Entity)
                     .OfType<Genre>()
+                    .Union(db.Genres)
                     .Select(g => g.Name), StringComparer.Ordinal);
 
             foreach (string genreName in genreNamesToAdd)
@@ -339,10 +348,19 @@ namespace Howler.Core.Database
 
         public IEnumerable<Track> GetTracks()
         {
-            CollectionContainer db = new CollectionContainer();
-            IEnumerable<Track> tracks = from track in db.Tracks
-                                        select track;
+            IEnumerable<Track> tracks = _collectionContainer.Tracks.ToList();
+
             return tracks;
+        }
+
+        public IEnumerable<Artist> GetTrackArtistsAndAlbumArtists()
+        {
+            IEnumerable<Artist> artists = (from artist in _collectionContainer.Artists
+                                    where artist.Track.Any() || artist.Album.Any()
+                                    orderby artist.Name
+                                    select artist).ToList();
+
+            return artists;
         }
     }
 }

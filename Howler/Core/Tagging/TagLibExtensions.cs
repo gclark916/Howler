@@ -27,7 +27,7 @@ namespace Howler.Core.Tagging
                 {
                     if (subTag is XiphComment)
                     {
-                        dateTag = tag;
+                        dateTag = subTag;
                         break;
                     }
                     if (subTag is TagLib.Flac.Metadata)
@@ -36,7 +36,7 @@ namespace Howler.Core.Tagging
                         break;
                     }
                     if (subTag is TagLib.Id3v2.Tag)
-                        dateTag = tag;
+                        dateTag = subTag;
                 }
             }
 
