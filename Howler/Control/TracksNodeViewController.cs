@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Gtk;
+using Howler.Core.Playback;
 using Howler.Gui;
 using Howler.Core.Database;
 
@@ -10,6 +12,8 @@ namespace Howler.Control
 {
     class TracksNodeViewController
     {
+        private readonly AudioPlayer _audioPlayer;
+
         public ScrolledWindow View { get; private set;  }
         private readonly TracksListView _tracksListView;
         private readonly ListStore _unfilteredModel;
@@ -20,10 +24,28 @@ namespace Howler.Control
 
         public TracksNodeViewController(Collection collection)
         {
+            _audioPlayer = new AudioPlayer();
+
             _tracksListView = new TracksListView
                 {
                     HeadersClickable = true, 
                     RulesHint = true
+                };
+
+            _tracksListView.RowActivated += (o, args) =>
+                {
+                    TracksListView tracksListView = o as TracksListView;
+                    if (tracksListView == null)
+                        return;
+
+                    TreeIter iter;
+                    tracksListView.Model.GetIter(out iter, args.Path);
+                    Track track = (Track) tracksListView.Model.GetValue(iter, 0);
+                    _audioPlayer.Stop();
+                    _audioPlayer.ClearQueue();
+                    string uri = "file:///" + track.Path;
+                    _audioPlayer.Enqueue(new[] {uri});
+                    _audioPlayer.Play();
                 };
 
             AddTextColumn(t => t.Title, "Title", _tracksListView);
@@ -33,8 +55,8 @@ namespace Howler.Control
                 {
                     TimeSpan timeSpan = TimeSpan.FromMilliseconds(t.Duration);
                     string length = t.Duration >= 1000*60*60 ? 
-                                        String.Format("{0}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds) 
-                                        : String.Format("{0}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
+                                        String.Format(CultureInfo.CurrentCulture,"{0}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds) 
+                                        : String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
                     return length;
                 }, "Length", _tracksListView);
 

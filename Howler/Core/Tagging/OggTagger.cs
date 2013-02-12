@@ -115,18 +115,18 @@ namespace Howler.Core.Tagging
 
                 if (!howlerRatingDone)
                 {
-                    if (fieldname.ToUpper().StartsWith(RatingPrefix))
+                    if (fieldname.StartsWith(RatingPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         ratingRaw = xiphtag.GetFirstField(fieldname);
                         string ratingCreator = fieldname.Substring(RatingPrefix.Length);
-                        if (ratingCreator.ToUpper() == HowlerName)
+                        if (String.Compare(ratingCreator, HowlerName, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             // We made this rating, consider it authoritative.
                             howlerRatingDone = true;
                             // Don't return -- we might not have seen a playcount yet.
                         }
                     }
-                    else if (String.Compare(fieldname.ToUpper(), MediaMonkeyRatingField, StringComparison.Ordinal) == 0)
+                    else if (String.Compare(fieldname, MediaMonkeyRatingField, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         ratingRaw = xiphtag.GetFirstField(fieldname);
                         mediaMonkeyFormat = true;
@@ -134,12 +134,12 @@ namespace Howler.Core.Tagging
 
                 }
                 else if (!howlerPlaycountDone &&
-                            fieldname.ToUpper().StartsWith(PlaycountPrefix))
+                            fieldname.StartsWith(PlaycountPrefix, StringComparison.OrdinalIgnoreCase))
                 {
 
                     playcountRaw = xiphtag.GetFirstField(fieldname);
                     string playcountCreator = fieldname.Substring(PlaycountPrefix.Length);
-                    if (playcountCreator.ToUpper() == HowlerName)
+                    if (string.Compare(playcountCreator, HowlerName, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         // We made this playcount, consider it authoritative.
                         howlerPlaycountDone = true;
@@ -147,10 +147,10 @@ namespace Howler.Core.Tagging
                     }
                 }
             }
-            if (ratingRaw != "")
+            if (!string.IsNullOrEmpty(ratingRaw))
             {
                 if (howlerRatingDone || mediaMonkeyFormat)
-                    rating = int.Parse(ratingRaw);
+                    rating = int.Parse(ratingRaw, CultureInfo.InvariantCulture);
                 else
                 {
                     int bansheeRating = OggToBanshee(ratingRaw);
@@ -158,9 +158,9 @@ namespace Howler.Core.Tagging
                 }
 
             }
-            if (playcountRaw != "")
+            if (!string.IsNullOrEmpty(playcountRaw))
             {
-                playcount = int.Parse(playcountRaw);
+                playcount = int.Parse(playcountRaw, CultureInfo.InvariantCulture);
             }
         }
 
@@ -173,8 +173,8 @@ namespace Howler.Core.Tagging
             // Collect list of rating tags to be updated:
             foreach (string fieldname in xiphtag)
             {
-                if (fieldname.ToUpper().StartsWith(RatingPrefix) 
-                    || String.Compare(fieldname.ToUpper(), MediaMonkeyRatingField, StringComparison.Ordinal) == 0)
+                if (fieldname.StartsWith(RatingPrefix, StringComparison.OrdinalIgnoreCase) 
+                    || String.Compare(fieldname, MediaMonkeyRatingField, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     ratingFieldnames.Add(fieldname);
                 }
@@ -202,7 +202,7 @@ namespace Howler.Core.Tagging
                         xiphtag.SetField(ratingname, rating.ToString(CultureInfo.InvariantCulture));
                     }
 
-                    else if (ratingname.ToUpper().StartsWith(RatingPrefix))
+                    else if (ratingname.StartsWith(RatingPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         xiphtag.SetField(ratingname, bansheeRatingString);
                     }
@@ -217,7 +217,7 @@ namespace Howler.Core.Tagging
             // Collect list of  playcount tags to be updated:
             foreach (string fieldname in xiphtag)
             {
-                if (fieldname.ToUpper().StartsWith(PlaycountPrefix))
+                if (fieldname.StartsWith(PlaycountPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     playcountFieldnames.Add(fieldname);
                 }

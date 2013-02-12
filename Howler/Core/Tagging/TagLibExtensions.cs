@@ -1,4 +1,5 @@
 ﻿using TagLib;
+using TagLib.Flac;
 using TagLib.Ogg;
 
 namespace Howler.Core.Tagging
@@ -9,10 +10,15 @@ namespace Howler.Core.Tagging
         {
             int rating = 0;
             int playcount;
-            if (tag is TagLib.Id3v2.Tag)
-                ID3v2Tagger.GetRatingAndPlayCount((TagLib.Id3v2.Tag)tag, out rating, out playcount);
-            else if (tag is XiphComment)
-                OggTagger.GetRatingAndPlayCount((XiphComment)tag, out rating, out playcount);
+            var id3V2Tag = tag as TagLib.Id3v2.Tag;
+            if (id3V2Tag != null)
+                ID3v2Tagger.GetRatingAndPlayCount(id3V2Tag, out rating, out playcount);
+            else
+            {
+                var xiphCommentTag = tag as XiphComment;
+                if (xiphCommentTag != null)
+                    OggTagger.GetRatingAndPlayCount(xiphCommentTag, out rating, out playcount);
+            }
             return rating;
         }
 
@@ -25,25 +31,33 @@ namespace Howler.Core.Tagging
                 var tags = combinedTag.Tags;
                 foreach (Tag subTag in tags)
                 {
-                    if (subTag is XiphComment)
+                    var subXiphCommentTag = subTag as XiphComment;
+                    if (subXiphCommentTag != null)
                     {
                         dateTag = subTag;
                         break;
                     }
-                    if (subTag is TagLib.Flac.Metadata)
+
+                    var subFlacMetadataTag = subTag as Metadata;
+                    if (subFlacMetadataTag != null)
                     {
-                        dateTag = ((TagLib.Flac.Metadata) subTag).GetComment(false, null);
+                        dateTag = subFlacMetadataTag.GetComment(false, null);
                         break;
                     }
-                    if (subTag is TagLib.Id3v2.Tag)
+
+                    var subId3V2Tag = subTag as TagLib.Id3v2.Tag;
+                    if (subId3V2Tag != null)
                         dateTag = subTag;
                 }
             }
 
-            if (dateTag is XiphComment)
-                return OggTagger.GetDate((XiphComment)dateTag);
-            if (dateTag is TagLib.Id3v2.Tag)
-                return ID3v2Tagger.GetDate((TagLib.Id3v2.Tag)dateTag);
+            var xiphCommentTag = dateTag as XiphComment;
+            if (xiphCommentTag != null)
+                return OggTagger.GetDate(xiphCommentTag);
+
+            var id3V2Tag = dateTag as TagLib.Id3v2.Tag;
+            if (id3V2Tag != null)
+                return ID3v2Tagger.GetDate(id3V2Tag);
 
             return "";
         }

@@ -15,7 +15,7 @@ using TagLib;
 
 namespace Howler.Core.Database
 {
-    class Collection
+    class Collection : IDisposable
     {
         private readonly CollectionContainer _collectionContainer;
 
@@ -361,6 +361,11 @@ namespace Howler.Core.Database
                                     select artist).ToList();
 
             return artists;
+        }
+
+        public void Dispose()
+        {
+            _collectionContainer.Dispose();
         }
     }
 }

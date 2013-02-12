@@ -29,14 +29,18 @@ namespace Howler.Control
             _window.Add(hPaned);
 
             _window.ShowAll();
-            _window.ResizeChildren();
+        }
+
+        public void Run()
+        {
+            Application.Run();
         }
 
         public static void Main(string[] args)
         {
             Application.Init();
             MainController controller = new MainController();
-            Application.Run();
+            controller.Run();
         }
     }
 }

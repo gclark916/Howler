@@ -276,22 +276,22 @@ namespace Howler.Core.Tagging
                 switch (tuples[index].Item2)
                 {
                     case DateGranularity.Year:
-                        formattedDates[index] = tuples[index].Item1.ToString("yyyy");
+                        formattedDates[index] = tuples[index].Item1.ToString("yyyy", CultureInfo.InvariantCulture);
                         break;
                     case DateGranularity.Month:
-                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM");
+                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM", CultureInfo.InvariantCulture);
                         break;
                     case DateGranularity.Day:
-                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-dd");
+                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                         break;
                     case DateGranularity.Hour:
-                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-ddTHH");
+                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-ddTHH", CultureInfo.InvariantCulture);
                         break;
                     case DateGranularity.Minute:
-                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-ddTHH:mm");
+                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture);
                         break;
                     case DateGranularity.Second:
-                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-ddTHH:mm:ss");
+                        formattedDates[index] = tuples[index].Item1.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
                         break;
                 }
             }

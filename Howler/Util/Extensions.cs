@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Security.Cryptography;
 
@@ -24,7 +25,7 @@ namespace Howler.Util
 
             for (int i = 0; i < data.Length; i++)
             {
-                sBuilder.Append(data[i].ToString("x2"));
+                sBuilder.Append(data[i].ToString("x2", CultureInfo.InvariantCulture));
             }
 
             return sBuilder.ToString();
