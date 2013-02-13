@@ -4,6 +4,10 @@ namespace Howler.Gui
 {
     class SourceTreeView : TreeView
     {
+        public SourceTreeView()
+        {
+            HeadersVisible = false;
+        }
     }
 
     class SourceCellRenderer : CellRendererText

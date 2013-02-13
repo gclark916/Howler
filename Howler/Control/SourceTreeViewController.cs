@@ -10,22 +10,13 @@ namespace Howler.Control
     {
         public ScrolledWindow View { get; private set; }
         private readonly SourceTreeView _sourceTreeView;
-        private readonly TracksNodeViewController _tracksNodeViewController;
+        private readonly TracksListViewController _tracksListViewController;
 
-        public SourceTreeViewController(TracksNodeViewController tracksNodeViewController, Collection collection)
+        public SourceTreeViewController(TracksListViewController tracksListViewController, Collection collection)
         {
-            _tracksNodeViewController = tracksNodeViewController;
+            _tracksListViewController = tracksListViewController;
 
             _sourceTreeView = new SourceTreeView();
-            SourceTreeViewColumn sourceColumn = new SourceTreeViewColumn();
-            SourceCellRenderer sourceCellRenderer = new SourceCellRenderer();
-            sourceColumn.PackStart(sourceCellRenderer, true);
-            sourceColumn.SetCellDataFunc(sourceCellRenderer,
-                (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
-                {
-                    SourceTreeStoreValue value = (SourceTreeStoreValue)model.GetValue(iter, 0);
-                    ((CellRendererText)cell).Text = value.DisplayString;
-                });
 
             _sourceTreeView.Selection.Changed += (o, args) =>
             {
@@ -38,24 +29,24 @@ namespace Howler.Control
                 treeSelection.GetSelected(out model, out iter);
                 SourceTreeStoreValue value = (SourceTreeStoreValue)model.GetValue(iter, 0);
                 if (value != null)
-                    _tracksNodeViewController.FilterStore(value.TrackFilter);
+                    _tracksListViewController.FilterStore(value.TrackFilter);
             };
 
-            TreeStore store = new TreeStore(typeof(SourceTreeStoreValue));
+            _sourceTreeView.Model = new TreeStore(typeof(SourceTreeStoreValue));
 
             SourceTreeStoreValue musicRow = new SourceTreeStoreValue
                 {
                     DisplayString = "Music",
                     TrackFilter = track => true
                 };
-            TreeIter musicIter = store.AppendValues(musicRow);
+            TreeIter musicIter = ((TreeStore)_sourceTreeView.Model).AppendValues(musicRow);
 
             SourceTreeStoreValue artistAndAlbumArtistRow = new SourceTreeStoreValue
                 {
                     DisplayString = "Artist & Album Artist",
                     TrackFilter = track => true
                 };
-            TreeIter artistAndAlbumArtistIter = store.AppendValues(musicIter, artistAndAlbumArtistRow);
+            TreeIter artistAndAlbumArtistIter = ((TreeStore)_sourceTreeView.Model).AppendValues(musicIter, artistAndAlbumArtistRow);
 
             foreach (Artist artist in collection.GetTrackArtistsAndAlbumArtists())
             {
@@ -65,7 +56,7 @@ namespace Howler.Control
                         DisplayString = artist.Name,
                         TrackFilter = track => track.Album.Artists.Any(a => a.Id == someArtist.Id) || track.Artists.Any(a => a.Id == someArtist.Id)
                     };
-                TreeIter someArtistIter = store.AppendValues(artistAndAlbumArtistIter, someArtistRow);
+                TreeIter someArtistIter = ((TreeStore)_sourceTreeView.Model).AppendValues(artistAndAlbumArtistIter, someArtistRow);
 
                 foreach (Album album in someArtist.Album)
                 {
@@ -76,14 +67,22 @@ namespace Howler.Control
                             TrackFilter =
                                 track => string.Compare(track.Album.Title, someAlbum.Title, StringComparison.Ordinal) == 0
                         };
-                    store.AppendValues(someArtistIter, someAlbumRow);
+                    ((TreeStore)_sourceTreeView.Model).AppendValues(someArtistIter, someAlbumRow);
                 }
             }
 
+            //_sourceTreeView.Model = store;
 
+            SourceTreeViewColumn sourceColumn = new SourceTreeViewColumn();
+            SourceCellRenderer sourceCellRenderer = new SourceCellRenderer();
+            sourceColumn.PackStart(sourceCellRenderer, true);
+            sourceColumn.SetCellDataFunc(sourceCellRenderer,
+                (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
+                {
+                    SourceTreeStoreValue value = (SourceTreeStoreValue)model.GetValue(iter, 0);
+                    ((CellRendererText)cell).Text = value.DisplayString;
+                });
             _sourceTreeView.AppendColumn(sourceColumn);
-
-            _sourceTreeView.Model = store;
 
             View = new ScrolledWindow {_sourceTreeView};
             View.SetSizeRequest(200, -1);
@@ -93,7 +92,7 @@ namespace Howler.Control
     class SourceTreeStoreValue
     {
         public string DisplayString;
-        public TracksNodeViewController.TrackFilter TrackFilter;
+        public TracksListViewController.TrackFilter TrackFilter;
         public TestExpandRowHandler TestExpandRowHandler;
     }
 }

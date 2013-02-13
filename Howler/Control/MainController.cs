@@ -1,4 +1,6 @@
-﻿using Gtk;
+﻿using System;
+using Gtk;
+using Howler.Core.Playback;
 using Howler.Gui;
 using Howler.Core.Database;
 
@@ -8,25 +10,34 @@ namespace Howler.Control
     {
         private readonly MainWindow _window;
         private readonly Collection _collection;
-        private readonly TracksNodeViewController _tracksNodeViewController;
+        private readonly TracksListViewController _tracksListViewController;
         private readonly SourceTreeViewController _sourceTreeViewController;
+        private Widget _nowPlayingPanel;
+        private PlayerControlPanelController _playerControlPanelController;
 
         MainController()
         {
+           // GLib.ExceptionManager.UnhandledException += args =>
+           //     {
+           //        Console.Write(args.ToString());
+            //    };
             _collection = new Collection();
             //_collection.ImportDirectory("F:\\Google Music\\");
             //_collection.ImportDirectory("F:\\Music\\Death Grips\\Exmilitary");
 
-            _tracksNodeViewController = new TracksNodeViewController(_collection);
-            _sourceTreeViewController = new SourceTreeViewController(_tracksNodeViewController, _collection);
+            AudioPlayer audioPlayer = new AudioPlayer();
+            _tracksListViewController = new TracksListViewController(_collection, audioPlayer);
+            _sourceTreeViewController = new SourceTreeViewController(_tracksListViewController, _collection);
+            _playerControlPanelController = new PlayerControlPanelController(audioPlayer);
+            _nowPlayingPanel = new Label();
 
             _window = new MainWindow();
             _window.DeleteEvent += (o, args) => Application.Quit();
 
-            HPaned hPaned = new HPaned();
-            hPaned.Add1(_sourceTreeViewController.View);
-            hPaned.Add2(_tracksNodeViewController.View);
-            _window.Add(hPaned);
+            _window.AddWest(_sourceTreeViewController.View);
+            _window.AddCenter(_tracksListViewController.View);
+            _window.AddEast(_nowPlayingPanel);
+            _window.AddSouth(_playerControlPanelController.View);
 
             _window.ShowAll();
         }
@@ -38,6 +49,7 @@ namespace Howler.Control
 
         public static void Main(string[] args)
         {
+            Environment.SetEnvironmentVariable("GTK_SHARP_DEBUG", "");
             Application.Init();
             MainController controller = new MainController();
             controller.Run();

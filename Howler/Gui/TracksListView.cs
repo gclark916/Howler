@@ -13,7 +13,6 @@ namespace Howler.Gui
             Ellipsize = Pango.EllipsizeMode.End;
             Size = 1;
             Font = "Segoe UI";
-            FixedHeightFromFont = 0;
             Ypad = 0;
         }
     }

@@ -1,16 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Gst;
 using Gst.BasePlugins;
+using Howler.Core.Database;
 
 namespace Howler.Core.Playback
 {
     class AudioPlayer
     {
         private readonly PlayBin2 _playBin;
-        private readonly Queue<string> _uriQueue;
-        private string _currentSong;
+        private Track[] _trackArray;
+        private uint _currentTrackIndex;
+        public event TrackChangedHandler TrackChanged;
+
+        protected virtual void OnTrackChanged(TrackChangedHandlerArgs args)
+        {
+            TrackChangedHandler handler = TrackChanged;
+            if (handler != null) 
+                handler(this, args);
+        }
 
         public AudioPlayer()
         {
@@ -38,14 +45,28 @@ namespace Howler.Core.Playback
 
             _playBin = new PlayBin2("_playBin");
             _playBin.Bus.AddWatch(OnBusMessage);
-            _playBin.AboutToFinish += (o, args) =>
+            /*_playBin.AboutToFinish += (o, args) =>
                 {
-                    _currentSong = _uriQueue.Dequeue();
-                    _playBin.SetState(State.Null);
-                    _playBin.Uri = _currentSong;
-                };
+                    if (_currentTrackIndex + 1 >= _trackArray.Length) 
+                        return;
 
-            _uriQueue = new Queue<string>();
+                    OnTrackChanged(new TrackChangedHandlerArgs
+                        {
+                            NewTrack = _trackArray[_currentTrackIndex + 1],
+                            OldTrack = _trackArray[_currentTrackIndex]
+                        });
+                    _playBin.Uri = PathStringToUri(_trackArray[++_currentTrackIndex].Path);
+                };*/
+            _trackArray = new Track[0];
+        }
+
+        public bool IsPlaying { 
+            get
+            {
+                State currentState, pendingState;
+                _playBin.GetState(out currentState, out pendingState, 0);
+                return pendingState == State.Playing || (currentState == State.Playing && pendingState == State.VoidPending);
+            }  
         }
 
         private bool OnBusMessage(Bus bus, Message message)
@@ -59,16 +80,16 @@ namespace Howler.Core.Playback
                     Console.WriteLine("Gstreamer error: {0}\n{1}", msg, message.Structure.Get("debug"));
                     break;
                 case MessageType.Eos:
-                    _playBin.SetState(State.Null);
-                    if (_uriQueue.Any())
+                    if (_currentTrackIndex+1 < _trackArray.Length)
                     {
-                        _currentSong = _uriQueue.Dequeue();
-                        _playBin.Uri = _currentSong;
+                        _playBin.SetState(State.Null);
+                        OnTrackChanged(new TrackChangedHandlerArgs
+                            {
+                                NewTrack = _trackArray[_currentTrackIndex + 1], 
+                                OldTrack = _trackArray[_currentTrackIndex]
+                            });
+                        _playBin.Uri = PathStringToUri(_trackArray[++_currentTrackIndex].Path);
                         _playBin.SetState(State.Playing);
-                    }
-                    else
-                    {
-                        _currentSong = null;
                     }
                     break;
             }
@@ -78,19 +99,25 @@ namespace Howler.Core.Playback
 
         public void ClearQueue()
         {
-            _currentSong = null;
-            _uriQueue.Clear();
+            _playBin.Uri = null;
+            _trackArray = new Track[0];
         }
 
-        public void Enqueue(string[] trackUriArray)
+        public void ReplacePlaylistAndPlay(Track[] trackArray, uint trackIndex)
         {
-            foreach (string trackUri in trackUriArray)
-                _uriQueue.Enqueue(trackUri);
-            if (_currentSong == null)
+            if (trackIndex >= trackArray.Length)
+                throw new ArgumentException("Index out of bounds", "trackIndex");
+
+            OnTrackChanged(new TrackChangedHandlerArgs
             {
-                _currentSong = _uriQueue.Dequeue();
-                _playBin.Uri = _currentSong;
-            }
+                NewTrack = trackArray[trackIndex],
+                OldTrack = _currentTrackIndex < _trackArray.Length ? _trackArray[_currentTrackIndex] : null
+            });
+            _currentTrackIndex = trackIndex;
+            _trackArray = trackArray;
+            _playBin.SetState(State.Null);
+            _playBin.Uri = PathStringToUri(_trackArray[_currentTrackIndex].Path);
+            _playBin.SetState(State.Playing);
         }
 
         public void Play()
@@ -100,7 +127,59 @@ namespace Howler.Core.Playback
 
         public void Stop()
         {
-            _playBin.SetState(State.Null);
+            _playBin.SetState(State.Ready);
         }
+
+        public void PreviousTrack()
+        {
+            if (_currentTrackIndex <= 0) 
+                return;
+
+            _playBin.SetState(State.Null);
+            OnTrackChanged(new TrackChangedHandlerArgs
+            {
+                NewTrack = _trackArray[_currentTrackIndex - 1],
+                OldTrack = _trackArray[_currentTrackIndex]
+            });
+            _playBin.Uri = PathStringToUri(_trackArray[--_currentTrackIndex].Path);
+            _playBin.SetState(State.Playing);
+        }
+
+        public void NextTrack()
+        {
+            if (_currentTrackIndex + 1 < _trackArray.Length)
+            {
+                _playBin.SetState(State.Null);
+                OnTrackChanged(new TrackChangedHandlerArgs
+                {
+                    NewTrack = _trackArray[_currentTrackIndex + 1],
+                    OldTrack = _trackArray[_currentTrackIndex]
+                });
+                _playBin.Uri = PathStringToUri(_trackArray[++_currentTrackIndex].Path);
+                _playBin.SetState(State.Playing);
+            }
+            else
+            {
+                _playBin.SetState(State.Ready);
+            }
+        }
+
+        public void Pause()
+        {
+            _playBin.SetState(State.Paused);
+        }
+
+        private static string PathStringToUri(string path)
+        {
+            return "file:///" + path;
+        }
+    }
+
+    internal delegate void TrackChangedHandler(object sender, TrackChangedHandlerArgs args);
+
+    internal class TrackChangedHandlerArgs
+    {
+        public Track OldTrack;
+        public Track NewTrack;
     }
 }
