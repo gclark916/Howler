@@ -141,13 +141,17 @@ namespace Howler.Control
             bool exists = args.NewTrack != null && _unfilteredTrackIters.TryGetValue(args.NewTrack, out iter);
             if (exists)
             {
-                _unfilteredModel.EmitRowChanged(_unfilteredModel.GetPath(iter), iter);
+                TreeIter filteredIter = _filteredModel.ConvertChildIterToIter(iter);
+                TreeIter newIter = ((TreeModelSort)_tracksListView.Model).ConvertChildIterToIter(filteredIter);
+                ((TreeModelSort)_tracksListView.Model).EmitRowChanged(_tracksListView.Model.GetPath(newIter), newIter);
             }
 
             exists = args.OldTrack != null && _unfilteredTrackIters.TryGetValue(args.OldTrack, out iter);
             if (exists)
             {
-                _unfilteredModel.EmitRowChanged(_unfilteredModel.GetPath(iter), iter);
+                TreeIter filteredIter = _filteredModel.ConvertChildIterToIter(iter);
+                TreeIter oldIter = ((TreeModelSort) _tracksListView.Model).ConvertChildIterToIter(filteredIter);
+                ((TreeModelSort) _tracksListView.Model).EmitRowChanged(_tracksListView.Model.GetPath(oldIter), oldIter);
             }
         }
 
