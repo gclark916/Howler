@@ -7,7 +7,6 @@ using Gtk;
 using Howler.Core.Playback;
 using Howler.Gui;
 using Howler.Core.Database;
-using Pango;
 
 namespace Howler.Control
 {
@@ -18,6 +17,8 @@ namespace Howler.Control
         public ScrolledWindow View { get; private set;  }
         private readonly TracksListView _tracksListView;
         private readonly ListStore _unfilteredModel;
+        private readonly TreeModelFilter _filteredModel;
+        private TrackFilter _trackFilter;
         private readonly Dictionary<Track, TreeIter> _unfilteredTrackIters;
         private Track _playingTrack;
 
@@ -47,15 +48,25 @@ namespace Howler.Control
                 _unfilteredTrackIters.Add(track, trackIter);
             }
 
-            _tracksListView.Model = _unfilteredModel;
+            _trackFilter = track => true;
+            _filteredModel = new TreeModelFilter(_unfilteredModel, null)
+                {
+                    VisibleFunc = (model, iter) =>
+                        {
+                            Track track = (Track) model.GetValue(iter, 0);
+                            return _trackFilter(track);
+                        }
+                };
+
+            _tracksListView.Model = new TreeModelSort(_filteredModel);
 
             int sortColumnId = 0;
-            AddTextColumn(t => t.Title, "Title", _tracksListView, _unfilteredModel, sortColumnId++);
-            AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), "Artist", _tracksListView, _unfilteredModel, sortColumnId++);
+            AddTextColumn(t => t.Title, "Title", sortColumnId++);
+            AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), "Artist", sortColumnId++);
             AddTextColumn(t => 
                           (t.Album == null || t.Album.Artists == null || t.Artists.Count == 0)  ? null :
-                              String.Join("; ", t.Album.Artists.Select(a => a.Name)), "Album Artist", _tracksListView, _unfilteredModel, sortColumnId++);
-            AddTextColumn(t => t.Album == null ? null : t.Album.Title, "Album", _tracksListView, _unfilteredModel, sortColumnId++);
+                              String.Join("; ", t.Album.Artists.Select(a => a.Name)), "Album Artist", sortColumnId++);
+            AddTextColumn(t => t.Album == null ? null : t.Album.Title, "Album", sortColumnId++);
             AddTextColumn(t =>
                 {
                     TimeSpan timeSpan = TimeSpan.FromMilliseconds(t.Duration);
@@ -63,17 +74,18 @@ namespace Howler.Control
                                         String.Format(CultureInfo.CurrentCulture,"{0}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds) 
                                         : String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
                     return length;
-                }, "Length", _tracksListView, _unfilteredModel, -1);
+                }, "Length", -1);
 
             IEnumerable<PropertyInfo> stringProperties = typeof(Track).GetProperties()
                 .Where(p => p.PropertyType.IsEquivalentTo(typeof(string)));
             foreach (PropertyInfo property in stringProperties)
-                AddTextColumnUsingStringProperty(property, property.Name, _tracksListView, _unfilteredModel, sortColumnId++);
+                AddTextColumnUsingStringProperty(property, property.Name, sortColumnId++);
 
             _audioPlayer.TrackChanged += AudioPlayerOnTrackChanged;
 
-            _unfilteredModel.SetSortColumnId(1, SortType.Ascending);
-            _unfilteredModel.DefaultSortFunc = DefaultSortFunc;
+            ((TreeModelSort)_tracksListView.Model).DefaultSortFunc = DefaultSortFunc;
+            ((TreeModelSort)_tracksListView.Model).SetSortColumnId(1, SortType.Ascending);
+
             View = new ScrolledWindow {_tracksListView};
         }
 
@@ -141,19 +153,11 @@ namespace Howler.Control
 
         public void FilterStore(TrackFilter trackFilter)
         {
-            TreeModelFilter filter = new TreeModelFilter(_unfilteredModel, null)
-                {
-                    VisibleFunc = (model, iter) =>
-                        {
-                            Track track = (Track) model.GetValue(iter, 0);
-                            return trackFilter(track);
-                        }
-                };
-
-            _tracksListView.Model = filter;
+            _trackFilter = trackFilter;
+            _filteredModel.Refilter();
         }
 
-        private void AddTextColumn(StringPropertySelector selector, string columnName, TreeView treeView, TreeSortable treeSortable, int sortColumnId)
+        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId)
         {
             TracksListViewColumn genericColumn = new TracksListViewColumn(columnName);
 
@@ -162,28 +166,30 @@ namespace Howler.Control
             genericColumn.SetCellDataFunc(pathCellTextRenderer,
                 (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
                     {
-                        var modelFilter = model as TreeModelFilter;
                         Track track = (Track)model.GetValue(iter, 0);
                         bool playing = _playingTrack != null && track.Equals(_playingTrack);
                         ((CellRendererText) cell).Text = selector(track);
                         ((CellRendererText) cell).Weight = playing ? 800 : 400;
                     });
 
-            genericColumn.SortColumnId = sortColumnId;
-            treeSortable.SetSortFunc(sortColumnId, (model, iter1, iter2) =>
+            if (sortColumnId >= 0)
             {
-                Track track1 = (Track)model.GetValue(iter1, 0);
-                Track track2 = (Track)model.GetValue(iter2, 0);
-                int result = string.Compare(selector(track1), selector(track2), StringComparison.CurrentCulture);
-                if (result == 0)
-                    result = DefaultSortFunc(model, iter1, iter2);
-                return result;
-            });
+                genericColumn.SortColumnId = sortColumnId;
+                ((TreeModelSort)_tracksListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
+                    {
+                        Track track1 = (Track) model.GetValue(iter1, 0);
+                        Track track2 = (Track) model.GetValue(iter2, 0);
+                        int result = string.Compare(selector(track1), selector(track2), StringComparison.CurrentCulture);
+                        if (result == 0)
+                            result = DefaultSortFunc(model, iter1, iter2);
+                        return result;
+                    });
+            }
 
-            treeView.AppendColumn(genericColumn);
+            _tracksListView.AppendColumn(genericColumn);
         }
 
-        private void AddTextColumnUsingStringProperty(PropertyInfo property, string columnName, TreeView treeView, TreeSortable treeSortable, int sortColumnId)
+        private void AddTextColumnUsingStringProperty(PropertyInfo property, string columnName, int sortColumnId)
         {
             TracksListViewColumn genericColumn = new TracksListViewColumn(columnName);
 
@@ -192,7 +198,6 @@ namespace Howler.Control
             genericColumn.SetCellDataFunc(pathCellTextRenderer,
                 (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
                 {
-                    var modelFilter = model as TreeModelFilter;
                     Track track = (Track)model.GetValue(iter, 0);
                     bool playing = _playingTrack != null && track.Equals(_playingTrack);
                     ((CellRendererText)cell).Text = (string)property.GetGetMethod().Invoke(track, null);
@@ -200,18 +205,19 @@ namespace Howler.Control
                 });
 
             genericColumn.SortColumnId = sortColumnId;
-            treeSortable.SetSortFunc(sortColumnId, (model, iter1, iter2) =>
-            {
-                Track track1 = (Track)model.GetValue(iter1, 0);
-                Track track2 = (Track)model.GetValue(iter2, 0);
-                int result = string.Compare((string)property.GetGetMethod().Invoke(track1, null),
-                    (string)property.GetGetMethod().Invoke(track2, null), StringComparison.CurrentCulture);
-                if (result == 0)
-                    result = DefaultSortFunc(model, iter1, iter2);
-                return result;
-            });
+            ((TreeModelSort)_tracksListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
+                {
+                    Track track1 = (Track) model.GetValue(iter1, 0);
+                    Track track2 = (Track) model.GetValue(iter2, 0);
+                    int result = string.Compare((string) property.GetGetMethod().Invoke(track1, null),
+                                                (string) property.GetGetMethod().Invoke(track2, null),
+                                                StringComparison.CurrentCulture);
+                    if (result == 0)
+                        result = DefaultSortFunc(model, iter1, iter2);
+                    return result;
+                });
 
-            treeView.AppendColumn(genericColumn);
+            _tracksListView.AppendColumn(genericColumn);
         }
     }
 }

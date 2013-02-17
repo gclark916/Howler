@@ -17,10 +17,10 @@ namespace Howler.Control
 
         MainController()
         {
-           // GLib.ExceptionManager.UnhandledException += args =>
-           //     {
-           //        Console.Write(args.ToString());
-            //    };
+            GLib.ExceptionManager.UnhandledException += args =>
+            {
+                Console.Write(args.ToString());
+            };
             _collection = new Collection();
             //_collection.ImportDirectory("F:\\Google Music\\");
             //_collection.ImportDirectory("F:\\Music\\Death Grips\\Exmilitary");

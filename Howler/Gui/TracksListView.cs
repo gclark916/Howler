@@ -4,6 +4,10 @@ namespace Howler.Gui
 {
     class TracksListView : TreeView
     {
+        public TracksListView()
+        {
+            FixedHeightMode = true;
+        }
     }
 
     class TracksCellRenderer : CellRendererText
