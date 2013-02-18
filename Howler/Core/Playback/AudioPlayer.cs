@@ -44,6 +44,8 @@ namespace Howler.Core.Playback
             Application.Init();
 
             _playBin = new PlayBin2("_playBin");
+            Element audioSink = SelectAudioSink();
+            _playBin.AudioSink = audioSink;
             _playBin.Bus.AddWatch(OnBusMessage);
             /*_playBin.AboutToFinish += (o, args) =>
                 {
@@ -58,6 +60,7 @@ namespace Howler.Core.Playback
                     _playBin.Uri = PathStringToUri(_trackArray[++_currentTrackIndex].Path);
                 };*/
             _trackArray = new Track[0];
+            _playBin.SetState(State.Ready);
         }
 
         public bool IsPlaying { 
@@ -82,7 +85,7 @@ namespace Howler.Core.Playback
                 case MessageType.Eos:
                     if (_currentTrackIndex+1 < _trackArray.Length)
                     {
-                        _playBin.SetState(State.Null);
+                        _playBin.SetState(State.Ready);
                         OnTrackChanged(new TrackChangedHandlerArgs
                             {
                                 NewTrack = _trackArray[_currentTrackIndex + 1], 
@@ -92,9 +95,50 @@ namespace Howler.Core.Playback
                         _playBin.SetState(State.Playing);
                     }
                     break;
+                case MessageType.StateChanged:
+                    State oldState;
+                    State newState;
+                    State pendingState;
+                    message.ParseStateChanged(out oldState, out newState, out pendingState);
+                    Console.WriteLine("Gstreamer {0} message: oldState: {1} newState: {2} pendingState: {3}", message.Type, oldState, newState, pendingState);
+                    break;
+                case MessageType.StreamStatus:
+                    StreamStatusType streamStatusType;
+                    Element owner;
+                    message.ParseStreamStatus(out streamStatusType, out owner);
+                    Console.WriteLine("Gstreamer {0} message: type {1} owner {2}", message.Type, streamStatusType, owner);
+                    break;
+                case MessageType.Tag:
+                    break;
+                default:
+                    Console.WriteLine("Gstreamer {0} message: {1}", message.Type, message);
+                    break;
             }
 
             return true;
+        }
+
+        static Element SelectAudioSink()
+        {
+            // Default to GConfAudioSink, which should Do The Right Thing.
+            Element audiosink = ElementFactory.Make("gconfaudiosink", "audiosink");
+            if (audiosink == null)
+            {
+                // Try DirectSoundSink, which should work on Windows
+                audiosink = ElementFactory.Make("directsoundsink", "audiosink");
+                if (audiosink != null)
+                {
+                    // The unmanaged code sets the volume on the directsoundsink here.
+                    // Presumably this fixes a problem, but there's no reference as to what it is.
+                    audiosink["volume"] = 1.0;
+                }
+                else
+                {
+                    audiosink = ElementFactory.Make("autoaudiosink", "audiosink") ??
+                                ElementFactory.Make("alsasink", "audiosink");
+                }
+            }
+            return audiosink;
         }
 
         public void ClearQueue()
@@ -115,7 +159,8 @@ namespace Howler.Core.Playback
             });
             _currentTrackIndex = trackIndex;
             _trackArray = trackArray;
-            _playBin.SetState(State.Null);
+
+            _playBin.SetState(State.Ready); 
             _playBin.Uri = PathStringToUri(_trackArray[_currentTrackIndex].Path);
             _playBin.SetState(State.Playing);
         }
@@ -135,7 +180,7 @@ namespace Howler.Core.Playback
             if (_currentTrackIndex <= 0) 
                 return;
 
-            _playBin.SetState(State.Null);
+            _playBin.SetState(State.Ready);
             OnTrackChanged(new TrackChangedHandlerArgs
             {
                 NewTrack = _trackArray[_currentTrackIndex - 1],
@@ -149,7 +194,7 @@ namespace Howler.Core.Playback
         {
             if (_currentTrackIndex + 1 < _trackArray.Length)
             {
-                _playBin.SetState(State.Null);
+                _playBin.SetState(State.Ready);
                 OnTrackChanged(new TrackChangedHandlerArgs
                 {
                     NewTrack = _trackArray[_currentTrackIndex + 1],
