@@ -20,7 +20,6 @@ namespace Howler.Control
         private readonly TreeModelFilter _filteredModel;
         private TrackFilter _trackFilter;
         private readonly Dictionary<Track, TreeIter> _unfilteredTrackIters;
-        private Track _playingTrack;
 
         delegate string StringPropertySelector(Track track);
 
@@ -58,7 +57,7 @@ namespace Howler.Control
                         }
                 };
 
-            _tracksListView.Model = new TreeModelSort(_filteredModel);
+            _tracksListView.Model = new TrackListModel(_filteredModel);
 
             int sortColumnId = 0;
             AddTextColumn(t => t.Title, "Title", sortColumnId++);
@@ -137,7 +136,7 @@ namespace Howler.Control
         private void AudioPlayerOnTrackChanged(object sender, TrackChangedHandlerArgs args)
         {
             TreeIter iter = new TreeIter();
-            _playingTrack = args.NewTrack;
+            ((TrackListModel) _tracksListView.Model).CurrentTrack = args.NewTrack;
             bool exists = args.NewTrack != null && _unfilteredTrackIters.TryGetValue(args.NewTrack, out iter);
             if (exists)
             {
@@ -171,7 +170,8 @@ namespace Howler.Control
                 (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
                     {
                         Track track = (Track)model.GetValue(iter, 0);
-                        bool playing = _playingTrack != null && track.Equals(_playingTrack);
+                        Track playingTrack = ((TrackListModel) model).CurrentTrack;
+                        bool playing = playingTrack != null && track.Equals(playingTrack);
                         ((CellRendererText) cell).Text = selector(track);
                         ((CellRendererText) cell).Weight = playing ? 800 : 400;
                     });
@@ -203,7 +203,8 @@ namespace Howler.Control
                 (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
                 {
                     Track track = (Track)model.GetValue(iter, 0);
-                    bool playing = _playingTrack != null && track.Equals(_playingTrack);
+                    Track playingTrack = ((TrackListModel)model).CurrentTrack;
+                    bool playing = playingTrack != null && track.Equals(playingTrack);
                     ((CellRendererText)cell).Text = (string)property.GetGetMethod().Invoke(track, null);
                     ((CellRendererText)cell).Weight = playing ? 800 : 400;
                 });
@@ -222,6 +223,16 @@ namespace Howler.Control
                 });
 
             _tracksListView.AppendColumn(genericColumn);
+        }
+
+        class TrackListModel : TreeModelSort 
+        {
+            public TrackListModel(TreeModel childModel) : base(childModel)
+            {
+                CurrentTrack = null;
+            }
+
+            public Track CurrentTrack { get; set; }
         }
     }
 }
