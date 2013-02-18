@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using Gdk;
 using Gtk;
 using Howler.Core.Playback;
 using Howler.Gui;
@@ -31,7 +32,7 @@ namespace Howler.Control
 
             _tracksListView = new TracksListView
                 {
-                    HeadersClickable = true, 
+                    HeadersClickable = true,
                     RulesHint = true
                 };
 
@@ -61,31 +62,40 @@ namespace Howler.Control
 
             int sortColumnId = 0;
             AddTextColumn(t => t.Title, "Title", sortColumnId++);
-            AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), "Artist", sortColumnId++);
-            AddTextColumn(t => 
-                          (t.Album == null || t.Album.Artists == null || t.Artists.Count == 0)  ? null :
-                              String.Join("; ", t.Album.Artists.Select(a => a.Name)), "Album Artist", sortColumnId++);
+            AddTextColumn(
+                t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)),
+                "Artist", sortColumnId++);
+            AddTextColumn(t =>
+                          (t.Album == null || t.Album.Artists == null || t.Artists.Count == 0)
+                              ? null
+                              : String.Join("; ", t.Album.Artists.Select(a => a.Name)), "Album Artist", sortColumnId++);
             AddTextColumn(t => t.Album == null ? null : t.Album.Title, "Album", sortColumnId++);
             AddTextColumn(t =>
                 {
                     TimeSpan timeSpan = TimeSpan.FromMilliseconds(t.Duration);
-                    string length = t.Duration >= 1000*60*60 ? 
-                                        String.Format(CultureInfo.CurrentCulture,"{0}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds) 
-                                        : String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
+                    string length = t.Duration >= 1000*60*60
+                                        ? String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}:{2:D2}", timeSpan.Hours,
+                                                        timeSpan.Minutes, timeSpan.Seconds)
+                                        : String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}", timeSpan.Minutes,
+                                                        timeSpan.Seconds);
                     return length;
                 }, "Length", -1);
 
-            IEnumerable<PropertyInfo> stringProperties = typeof(Track).GetProperties()
-                .Where(p => p.PropertyType.IsEquivalentTo(typeof(string)));
+            IEnumerable<PropertyInfo> stringProperties = typeof (Track).GetProperties()
+                                                                       .Where(
+                                                                           p =>
+                                                                           p.PropertyType.IsEquivalentTo(typeof (string)));
             foreach (PropertyInfo property in stringProperties)
                 AddTextColumnUsingStringProperty(property, property.Name, sortColumnId++);
 
             _audioPlayer.TrackChanged += AudioPlayerOnTrackChanged;
 
-            ((TreeModelSort)_tracksListView.Model).DefaultSortFunc = DefaultSortFunc;
-            ((TreeModelSort)_tracksListView.Model).SetSortColumnId(1, SortType.Ascending);
+            ((TreeModelSort) _tracksListView.Model).DefaultSortFunc = DefaultSortFunc;
+            ((TreeModelSort) _tracksListView.Model).SetSortColumnId(1, SortType.Ascending);
 
             View = new ScrolledWindow {_tracksListView};
+
+            _tracksListView.AddEvents((int) EventMask.AllEventsMask);
         }
 
         private static int DefaultSortFunc(TreeModel model, TreeIter iter1, TreeIter iter2)

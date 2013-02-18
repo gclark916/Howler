@@ -95,13 +95,13 @@ namespace Howler.Core.Playback
                         _playBin.SetState(State.Playing);
                     }
                     break;
-                case MessageType.StateChanged:
+                /*case MessageType.StateChanged:
                     State oldState;
                     State newState;
                     State pendingState;
                     message.ParseStateChanged(out oldState, out newState, out pendingState);
                     Console.WriteLine("Gstreamer {0} message: oldState: {1} newState: {2} pendingState: {3}", message.Type, oldState, newState, pendingState);
-                    break;
+                    break;*/
                 case MessageType.StreamStatus:
                     StreamStatusType streamStatusType;
                     Element owner;
@@ -110,9 +110,9 @@ namespace Howler.Core.Playback
                     break;
                 case MessageType.Tag:
                     break;
-                default:
+                /*default:
                     Console.WriteLine("Gstreamer {0} message: {1}", message.Type, message);
-                    break;
+                    break;*/
             }
 
             return true;
