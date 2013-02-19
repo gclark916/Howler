@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Security.Cryptography;
 
@@ -29,6 +32,15 @@ namespace Howler.Util
             }
 
             return sBuilder.ToString();
+        }
+
+        public static string GetEnumDescription(Enum value)
+        {
+            FieldInfo fi = value.GetType().GetField(value.ToString());
+
+            DescriptionAttribute[] attributes = (DescriptionAttribute[])fi.GetCustomAttributes(typeof(DescriptionAttribute), false);
+
+            return attributes.Length > 0 ? attributes[0].Description : value.ToString();
         }
     }
 }

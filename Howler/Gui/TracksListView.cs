@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Gdk;
 using Gtk;
 using Window = Gtk.Window;
@@ -18,11 +17,6 @@ namespace Howler.Gui
             _scrollStarted = DateTime.MinValue;
             Tooltip = new TracksListViewTooltip(this);
             FixedHeightMode = true;
-        }
-
-        protected override bool OnButtonPressEvent(EventButton evnt)
-        {
-            return base.OnButtonPressEvent(evnt);
         }
 
         protected override bool OnScrollEvent(EventScroll evnt)
