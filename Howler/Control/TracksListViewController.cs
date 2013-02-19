@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using Gdk;
@@ -19,10 +20,6 @@ namespace Howler.Control
 
         public ScrolledWindow View { get; private set;  }
         private readonly TracksListView _tracksListView;
-        private readonly ListStore _unfilteredModel;
-        private readonly TreeModelFilter _filteredModel;
-        private TrackFilter _trackFilter;
-        private readonly Dictionary<Track, TreeIter> _unfilteredTrackIters;
         private readonly TracksListViewSettings _settings;
 
         delegate string StringPropertySelector(Track track);
@@ -44,27 +41,7 @@ namespace Howler.Control
 
             _tracksListView.RowActivated += TracksListViewOnRowActivated;
 
-            _unfilteredModel = new ListStore(typeof (Track));
-
-            _unfilteredTrackIters = new Dictionary<Track, TreeIter>();
-
-            foreach (Track track in collection.GetTracks())
-            {
-                TreeIter trackIter = _unfilteredModel.AppendValues(track);
-                _unfilteredTrackIters.Add(track, trackIter);
-            }
-
-            _trackFilter = track => true;
-            _filteredModel = new TreeModelFilter(_unfilteredModel, null)
-                {
-                    VisibleFunc = (model, iter) =>
-                        {
-                            Track track = (Track) model.GetValue(iter, 0);
-                            return _trackFilter(track);
-                        }
-                };
-
-            _tracksListView.Model = new TrackListModel(_filteredModel);
+            _tracksListView.Model = new TrackListModel(collection);
 
             int sortColumnId = 0;
             foreach (TrackProperty property in _settings.ColumnPropertyArray)
@@ -129,29 +106,22 @@ namespace Howler.Control
 
         private void AudioPlayerOnTrackChanged(object sender, TrackChangedHandlerArgs args)
         {
-            TreeIter iter = new TreeIter();
-            ((TrackListModel) _tracksListView.Model).CurrentTrack = args.NewTrack;
-            bool exists = args.NewTrack != null && _unfilteredTrackIters.TryGetValue(args.NewTrack, out iter);
-            if (exists)
-            {
-                TreeIter filteredIter = _filteredModel.ConvertChildIterToIter(iter);
-                TreeIter newIter = ((TreeModelSort)_tracksListView.Model).ConvertChildIterToIter(filteredIter);
-                ((TreeModelSort)_tracksListView.Model).EmitRowChanged(_tracksListView.Model.GetPath(newIter), newIter);
-            }
+            var trackListModel = _tracksListView.Model as TrackListModel;
+            Debug.Assert(trackListModel != null, "trackListModel != null");
 
-            exists = args.OldTrack != null && _unfilteredTrackIters.TryGetValue(args.OldTrack, out iter);
-            if (exists)
-            {
-                TreeIter filteredIter = _filteredModel.ConvertChildIterToIter(iter);
-                TreeIter oldIter = ((TreeModelSort) _tracksListView.Model).ConvertChildIterToIter(filteredIter);
-                ((TreeModelSort) _tracksListView.Model).EmitRowChanged(_tracksListView.Model.GetPath(oldIter), oldIter);
-            }
+            trackListModel.HandleTrackChanged(args);
         }
 
         public void FilterStore(TrackFilter trackFilter)
         {
-            _trackFilter = trackFilter;
-            _filteredModel.Refilter();
+            var trackListModel = _tracksListView.Model as TrackListModel;
+            Debug.Assert(trackListModel != null, "trackListModel != null");
+
+            var filteredModel = trackListModel.Model as TreeModelFilter;
+            Debug.Assert(filteredModel != null, "filteredModel != null");
+
+            trackListModel.TrackFilter = trackFilter;
+            filteredModel.Refilter();
         }
 
         private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId)
@@ -287,14 +257,70 @@ namespace Howler.Control
             }
         }
 
-        class TrackListModel : TreeModelSort 
+        class TrackListModel : TreeModelSort
         {
-            public TrackListModel(TreeModel childModel) : base(childModel)
+            private TrackFilter _trackFilter = track => true;
+            private readonly Dictionary<Track, TreeIter> _unfilteredTrackIters;
+
+            public Track CurrentTrack { get; private set; }
+            public TrackFilter TrackFilter
             {
-                CurrentTrack = null;
+                set { _trackFilter = value; }
             }
 
-            public Track CurrentTrack { get; set; }
+            public TrackListModel(Collection collection) : this(CreateListStoreAndDictionaryTuple(collection))
+            {
+            }
+
+            private TrackListModel(Tuple<ListStore, Dictionary<Track, TreeIter>> tuple)
+                : base(new TreeModelFilter(tuple.Item1, null))
+            {
+                _unfilteredTrackIters = tuple.Item2;
+                ((TreeModelFilter)Model).VisibleFunc = (model, iter) =>
+                {
+                    Track track = (Track)model.GetValue(iter, 0);
+                    return _trackFilter(track);
+                };
+            }
+
+            private static Tuple<ListStore, Dictionary<Track, TreeIter>>  CreateListStoreAndDictionaryTuple(Collection collection)
+            {
+                var unfilteredModel = new ListStore(typeof(Track));
+
+                var unfilteredTrackIters = new Dictionary<Track, TreeIter>();
+
+                foreach (Track track in collection.GetTracks())
+                {
+                    TreeIter trackIter = unfilteredModel.AppendValues(track);
+                    unfilteredTrackIters.Add(track, trackIter);
+                }
+
+                return new Tuple<ListStore, Dictionary<Track, TreeIter>>(unfilteredModel, unfilteredTrackIters);
+            }
+
+            public void HandleTrackChanged(TrackChangedHandlerArgs args)
+            {
+                var filteredModel = Model as TreeModelFilter;
+                Debug.Assert(filteredModel != null, "filteredModel != null");
+
+                TreeIter iter = new TreeIter();
+                CurrentTrack = args.NewTrack;
+                bool exists = args.NewTrack != null && _unfilteredTrackIters.TryGetValue(args.NewTrack, out iter);
+                if (exists)
+                {
+                    TreeIter filteredIter = filteredModel.ConvertChildIterToIter(iter);
+                    TreeIter newIter = ConvertChildIterToIter(filteredIter);
+                    EmitRowChanged(GetPath(newIter), newIter);
+                }
+
+                exists = args.OldTrack != null && _unfilteredTrackIters.TryGetValue(args.OldTrack, out iter);
+                if (exists)
+                {
+                    TreeIter filteredIter = filteredModel.ConvertChildIterToIter(iter);
+                    TreeIter oldIter = ConvertChildIterToIter(filteredIter);
+                    EmitRowChanged(GetPath(oldIter), oldIter);
+                }
+            }
         }
     }
 
