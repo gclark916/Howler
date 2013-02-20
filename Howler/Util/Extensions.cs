@@ -34,6 +34,20 @@ namespace Howler.Util
             return sBuilder.ToString();
         }
 
+        public static string GetMd5Hash(this MD5 md5Hash, byte[] input)
+        {
+            byte[] data = md5Hash.ComputeHash(input);
+
+            StringBuilder sBuilder = new StringBuilder();
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                sBuilder.Append(data[i].ToString("x2", CultureInfo.InvariantCulture));
+            }
+
+            return sBuilder.ToString();
+        }
+
         public static string GetEnumDescription(Enum value)
         {
             FieldInfo fi = value.GetType().GetField(value.ToString());

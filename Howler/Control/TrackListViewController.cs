@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
@@ -14,12 +12,12 @@ using Howler.Util;
 
 namespace Howler.Control
 {
-    class TracksListViewController
+    class TrackListViewController
     {
         private readonly AudioPlayer _audioPlayer;
 
         public ScrolledWindow View { get; private set;  }
-        private readonly TracksListView _tracksListView;
+        private readonly TrackListView _trackListView;
         private readonly TracksListViewSettings _settings;
 
         delegate string StringPropertySelector(Track track);
@@ -27,36 +25,40 @@ namespace Howler.Control
 
         public delegate bool TrackFilter(Track track);
 
-        public TracksListViewController(Collection collection, AudioPlayer audioPlayer)
+        public TrackListViewController(Collection collection, AudioPlayer audioPlayer)
         {
             _settings = new TracksListViewSettings();
             _settings.Reload();
             _audioPlayer = audioPlayer;
 
-            _tracksListView = new TracksListView
+            _trackListView = new TrackListView
                 {
                     HeadersClickable = true,
                     RulesHint = true
                 };
 
-            _tracksListView.RowActivated += TracksListViewOnRowActivated;
+            _trackListView.RowActivated += TrackListViewOnRowActivated;
 
-            _tracksListView.Model = new TrackListModel(collection);
+            _trackListView.Model = new TrackListModel(collection);
 
             int sortColumnId = 0;
+            int artistSortColumnId = -1;
             foreach (TrackProperty property in _settings.ColumnPropertyArray)
             {
+                if (property == TrackProperty.Artist)
+                    artistSortColumnId = sortColumnId;
                 AddColumn(property, sortColumnId++);
             }
 
             _audioPlayer.TrackChanged += AudioPlayerOnTrackChanged;
 
-            ((TreeModelSort) _tracksListView.Model).DefaultSortFunc = DefaultSortFunc;
-            ((TreeModelSort) _tracksListView.Model).SetSortColumnId(2, SortType.Ascending);
+            ((TreeModelSort) _trackListView.Model).DefaultSortFunc = DefaultSortFunc;
+            if (artistSortColumnId >= 0)
+                ((TreeModelSort) _trackListView.Model).SetSortColumnId(artistSortColumnId, SortType.Ascending);
 
-            View = new ScrolledWindow {_tracksListView};
+            View = new ScrolledWindow {_trackListView};
 
-            _tracksListView.AddEvents((int) EventMask.AllEventsMask);
+            _trackListView.AddEvents((int) EventMask.AllEventsMask);
         }
 
         private static int DefaultSortFunc(TreeModel model, TreeIter iter1, TreeIter iter2)
@@ -81,32 +83,32 @@ namespace Howler.Control
             return result;
         }
 
-        private void TracksListViewOnRowActivated(object o, RowActivatedArgs args)
+        private void TrackListViewOnRowActivated(object o, RowActivatedArgs args)
         {
-            TracksListView tracksListView = o as TracksListView;
-            if (tracksListView == null)
+            TrackListView trackListView = o as TrackListView;
+            if (trackListView == null)
                 return;
 
-            int numTracks = tracksListView.Model.IterNChildren();
+            int numTracks = trackListView.Model.IterNChildren();
             Track[] trackArray = new Track[numTracks];
             TreeIter iter;
             int selectedTrackIndex = args.Path.Indices[0];
-            tracksListView.Model.GetIterFirst(out iter);
+            trackListView.Model.GetIterFirst(out iter);
 
             uint trackIndex = 0;
-            bool valid = tracksListView.Model.GetIterFirst(out iter);
+            bool valid = trackListView.Model.GetIterFirst(out iter);
             while (valid)
             {
-                Track track = (Track) tracksListView.Model.GetValue(iter, 0);
+                Track track = (Track) trackListView.Model.GetValue(iter, 0);
                 trackArray[trackIndex++] = track;
-                valid = tracksListView.Model.IterNext(ref iter);
+                valid = trackListView.Model.IterNext(ref iter);
             }
             _audioPlayer.ReplacePlaylistAndPlay(trackArray, (uint)selectedTrackIndex);
         }
 
         private void AudioPlayerOnTrackChanged(object sender, TrackChangedHandlerArgs args)
         {
-            var trackListModel = _tracksListView.Model as TrackListModel;
+            var trackListModel = _trackListView.Model as TrackListModel;
             Debug.Assert(trackListModel != null, "trackListModel != null");
 
             trackListModel.HandleTrackChanged(args);
@@ -114,14 +116,10 @@ namespace Howler.Control
 
         public void FilterStore(TrackFilter trackFilter)
         {
-            var trackListModel = _tracksListView.Model as TrackListModel;
+            var trackListModel = _trackListView.Model as TrackListModel;
             Debug.Assert(trackListModel != null, "trackListModel != null");
 
-            var filteredModel = trackListModel.Model as TreeModelFilter;
-            Debug.Assert(filteredModel != null, "filteredModel != null");
-
             trackListModel.TrackFilter = trackFilter;
-            filteredModel.Refilter();
         }
 
         private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId)
@@ -131,9 +129,9 @@ namespace Howler.Control
 
         private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId, TrackComparer comparer)
         {
-            TracksListViewColumn genericColumn = new TracksListViewColumn(columnName);
+            TrackListViewColumn genericColumn = new TrackListViewColumn(columnName);
 
-            TracksCellRenderer pathCellTextRenderer = new TracksCellRenderer();
+            TrackCellRenderer pathCellTextRenderer = new TrackCellRenderer();
             genericColumn.PackStart(pathCellTextRenderer, true);
             genericColumn.SetCellDataFunc(pathCellTextRenderer,
                 (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
@@ -148,7 +146,7 @@ namespace Howler.Control
             if (sortColumnId >= 0)
             {
                 genericColumn.SortColumnId = sortColumnId;
-                ((TreeModelSort)_tracksListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
+                ((TreeModelSort)_trackListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
                     {
                         Track track1 = (Track) model.GetValue(iter1, 0);
                         Track track2 = (Track) model.GetValue(iter2, 0);
@@ -159,7 +157,7 @@ namespace Howler.Control
                     });
             }
 
-            _tracksListView.AppendColumn(genericColumn);
+            _trackListView.AppendColumn(genericColumn);
         }
 
         private void AddColumn(TrackProperty property, int sortColumnId)
@@ -214,7 +212,7 @@ namespace Howler.Control
                         : null, 
                         description, sortColumnId);
                     break;
-                /*case TrackProperty.DiscNumber:*/
+                /*TODO: case TrackProperty.DiscNumber:*/
                 case TrackProperty.Genre:
                     AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Genres.Select(g => g.Name)), description, sortColumnId);
                     break;
@@ -240,6 +238,9 @@ namespace Howler.Control
                 case TrackProperty.Size:
                     AddTextColumn(t => string.Format("{0:N1} MB", (double)t.Size / (1024*1024)), description, sortColumnId);
                     break;
+                case TrackProperty.Summary:
+                    AddTextColumn(t => string.Format("{0} - {1}", String.Join("; ", t.Artists.Select(a => a.Name)), t.Title), description, sortColumnId);
+                    break;
                 case TrackProperty.Title:
                     AddTextColumn(t => t.Title, description, sortColumnId);
                     break;
@@ -256,72 +257,6 @@ namespace Howler.Control
                     break;
             }
         }
-
-        class TrackListModel : TreeModelSort
-        {
-            private TrackFilter _trackFilter = track => true;
-            private readonly Dictionary<Track, TreeIter> _unfilteredTrackIters;
-
-            public Track CurrentTrack { get; private set; }
-            public TrackFilter TrackFilter
-            {
-                set { _trackFilter = value; }
-            }
-
-            public TrackListModel(Collection collection) : this(CreateListStoreAndDictionaryTuple(collection))
-            {
-            }
-
-            private TrackListModel(Tuple<ListStore, Dictionary<Track, TreeIter>> tuple)
-                : base(new TreeModelFilter(tuple.Item1, null))
-            {
-                _unfilteredTrackIters = tuple.Item2;
-                ((TreeModelFilter)Model).VisibleFunc = (model, iter) =>
-                {
-                    Track track = (Track)model.GetValue(iter, 0);
-                    return _trackFilter(track);
-                };
-            }
-
-            private static Tuple<ListStore, Dictionary<Track, TreeIter>>  CreateListStoreAndDictionaryTuple(Collection collection)
-            {
-                var unfilteredModel = new ListStore(typeof(Track));
-
-                var unfilteredTrackIters = new Dictionary<Track, TreeIter>();
-
-                foreach (Track track in collection.GetTracks())
-                {
-                    TreeIter trackIter = unfilteredModel.AppendValues(track);
-                    unfilteredTrackIters.Add(track, trackIter);
-                }
-
-                return new Tuple<ListStore, Dictionary<Track, TreeIter>>(unfilteredModel, unfilteredTrackIters);
-            }
-
-            public void HandleTrackChanged(TrackChangedHandlerArgs args)
-            {
-                var filteredModel = Model as TreeModelFilter;
-                Debug.Assert(filteredModel != null, "filteredModel != null");
-
-                TreeIter iter = new TreeIter();
-                CurrentTrack = args.NewTrack;
-                bool exists = args.NewTrack != null && _unfilteredTrackIters.TryGetValue(args.NewTrack, out iter);
-                if (exists)
-                {
-                    TreeIter filteredIter = filteredModel.ConvertChildIterToIter(iter);
-                    TreeIter newIter = ConvertChildIterToIter(filteredIter);
-                    EmitRowChanged(GetPath(newIter), newIter);
-                }
-
-                exists = args.OldTrack != null && _unfilteredTrackIters.TryGetValue(args.OldTrack, out iter);
-                if (exists)
-                {
-                    TreeIter filteredIter = filteredModel.ConvertChildIterToIter(iter);
-                    TreeIter oldIter = ConvertChildIterToIter(filteredIter);
-                    EmitRowChanged(GetPath(oldIter), oldIter);
-                }
-            }
-        }
     }
 
     class TracksListViewSettings : ApplicationSettingsBase
@@ -332,53 +267,17 @@ namespace Howler.Control
         {
             get
             {
-                return (TrackProperty[]) this["ColumnPropertyArray"];
-            } 
+                return (TrackProperty[])this["ColumnPropertyArray"];
+            }
             set
             {
-                this["ColumnPropertyArray"] = (TrackProperty[]) value;
+                this["ColumnPropertyArray"] = (TrackProperty[])value;
             }
         }
 
         public TracksListViewSettings()
         {
-            ColumnPropertyArray = new[] {TrackProperty.TrackNumber, TrackProperty.Title, TrackProperty.Artist, TrackProperty.Album, TrackProperty.AlbumArtist, TrackProperty.Date, TrackProperty.Genre, TrackProperty.Rating, TrackProperty.Bitrate, TrackProperty.Size, TrackProperty.DateAdded, TrackProperty.Codec, TrackProperty.Path};
+            ColumnPropertyArray = new[] { TrackProperty.TrackNumber, TrackProperty.Title, TrackProperty.Artist, TrackProperty.Album, TrackProperty.AlbumArtist, TrackProperty.Date, TrackProperty.Genre, TrackProperty.Rating, TrackProperty.Bitrate, TrackProperty.Size, TrackProperty.DateAdded, TrackProperty.Codec, TrackProperty.Path };
         }
-    }
-
-    internal enum TrackProperty
-    {
-        Album,
-        [Description("Album Artist")]
-        AlbumArtist, 
-        Artist,
-        [Description("BPM")]
-        Bpm, 
-        Bitrate,
-        [Description("Bits per sample")]
-        BitsPerSample,
-        [Description("Channels")]
-        ChannelCount, 
-        Codec, 
-        Date,
-        [Description("Date Added")]
-        DateAdded,
-        [Description("Last Played")]
-        DateLastPlayed,
-        [Description("Disc #")]
-        DiscNumber, 
-        Duration, 
-        Genre, 
-        MusicBrainzReleaseId, 
-        MusicBrainzAlbumId, 
-        Path, 
-        Playcount, 
-        Rating,
-        [Description("Sample rate")]
-        SampleRate, 
-        Size, 
-        Title,
-        [Description("Track #")]
-        TrackNumber
     }
 }

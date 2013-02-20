@@ -77,6 +77,9 @@
     <Reference Include="EntityFramework">
       <HintPath>..\packages\EntityFramework.5.0.0\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
+    <Reference Include="FluentNHibernate">
+      <HintPath>..\packages\FluentNHibernate.1.3.0.733\lib\FluentNHibernate.dll</HintPath>
+    </Reference>
     <Reference Include="gdk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\gdk-sharp.dll</HintPath>
@@ -105,6 +108,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Mono-3.0.3\lib\mono\4.0\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
+    <Reference Include="Iesi.Collections">
+      <HintPath>..\packages\Iesi.Collections.3.2.0.4000\lib\Net35\Iesi.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="NHibernate">
+      <HintPath>..\packages\NHibernate.3.3.2.4000\lib\Net35\NHibernate.dll</HintPath>
+    </Reference>
     <Reference Include="pango-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\GtkSharp\2.12\lib\gtk-sharp-2.0\pango-sharp.dll</HintPath>
@@ -132,13 +141,25 @@
   <ItemGroup>
     <Compile Include="Control\PlayerControlPanelController.cs" />
     <Compile Include="Control\SourceTreeViewController.cs" />
-    <Compile Include="Control\TracksListViewController.cs" />
+    <Compile Include="Control\TrackListModel.cs" />
+    <Compile Include="Control\TrackProperty.cs" />
+    <Compile Include="Control\TrackListViewController.cs" />
     <Compile Include="Core\Database\Collection.cs" />
     <Compile Include="Core\Database\Collection.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Collection.edmx</DependentUpon>
     </Compile>
+    <Compile Include="Core\Database\Track.cs" />
+    <Compile Include="Core\MediaLibrary\Entities\Album.cs" />
+    <Compile Include="Core\MediaLibrary\Entities\Artist.cs" />
+    <Compile Include="Core\MediaLibrary\Entities\Genre.cs" />
+    <Compile Include="Core\MediaLibrary\Entities\Track.cs" />
+    <Compile Include="Core\MediaLibrary\Mappings\AlbumMap.cs" />
+    <Compile Include="Core\MediaLibrary\Mappings\ArtistMap.cs" />
+    <Compile Include="Core\MediaLibrary\Mappings\GenreMap.cs" />
+    <Compile Include="Core\MediaLibrary\Mappings\TableNames.cs" />
+    <Compile Include="Core\MediaLibrary\Mappings\TrackMap.cs" />
     <Compile Include="Core\Playback\AudioPlayer.cs" />
     <Compile Include="Core\Tagging\ID3v2Tagger.cs" />
     <Compile Include="Core\Tagging\OggTagger.cs" />
@@ -209,4 +230,5 @@
   <ItemGroup>
     <Content Include="Core\Database\Collection.edmx.sql" />
   </ItemGroup>
+  <ItemGroup />
 </Project>

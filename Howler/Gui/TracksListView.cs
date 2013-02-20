@@ -7,12 +7,12 @@ using WindowType = Gtk.WindowType;
 
 namespace Howler.Gui
 {
-    class TracksListView : TreeView
+    class TrackListView : TreeView
     {
         public readonly TracksListViewTooltip Tooltip;
         private DateTime _scrollStarted;
 
-        public TracksListView()
+        public TrackListView()
         {
             _scrollStarted = DateTime.MinValue;
             Tooltip = new TracksListViewTooltip(this);
@@ -94,11 +94,11 @@ namespace Howler.Gui
     class TracksListViewTooltip : Window
     {
         protected internal readonly Label Label;
-        private readonly TracksListView _tracksListView;
+        private readonly TrackListView _trackListView;
 
-        public TracksListViewTooltip(TracksListView tracksListView) : base(WindowType.Popup)
+        public TracksListViewTooltip(TrackListView trackListView) : base(WindowType.Popup)
         {
-            _tracksListView = tracksListView;
+            _trackListView = trackListView;
 
             Label = new Label();
             Label.SetAlignment(0, 0.5f);
@@ -109,7 +109,7 @@ namespace Howler.Gui
             Resizable = false;
             AddEvents((int) (EventMask.ScrollMask | EventMask.ButtonPressMask | EventMask.FocusChangeMask));
 
-            _tracksListView.FocusOutEvent += (o, args) => Hide();
+            _trackListView.FocusOutEvent += (o, args) => Hide();
         }
 
         protected override bool OnUnmapEvent(Event evnt)
@@ -122,25 +122,25 @@ namespace Howler.Gui
         {
             // TODO: edit evnt or create new one so that _tracksListView will process it correctly
             Hide();
-            return _tracksListView.ProcessEvent(evnt);
+            return _trackListView.ProcessEvent(evnt);
         }
 
         protected override bool OnFocusOutEvent(EventFocus evnt)
         {
             Hide();
-            return _tracksListView.ProcessEvent(evnt);
+            return _trackListView.ProcessEvent(evnt);
         }
 
         protected override bool OnScrollEvent(EventScroll evnt)
         {
             Hide();
-            return _tracksListView.ProcessEvent(evnt);
+            return _trackListView.ProcessEvent(evnt);
         }
     }
 
-    class TracksCellRenderer : CellRendererText
+    class TrackCellRenderer : CellRendererText
     {
-        public TracksCellRenderer()
+        public TrackCellRenderer()
         {
             Ellipsize = Pango.EllipsizeMode.End;
             Size = 1;
@@ -149,9 +149,9 @@ namespace Howler.Gui
         }
     }
 
-    class TracksListViewColumn : TreeViewColumn
+    class TrackListViewColumn : TreeViewColumn
     {
-        public TracksListViewColumn(string title)
+        public TrackListViewColumn(string title)
         {
             Title = title;
             Resizable = true;
