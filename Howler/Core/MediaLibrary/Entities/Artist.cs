@@ -1,21 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using Iesi.Collections.Generic;
 
 namespace Howler.Core.MediaLibrary.Entities
 {
     class Artist
     {
-        private IList<Track> _tracks;
-        private IList<Album> _albums;
+        private ISet<Track> _tracks;
+        private ISet<Album> _albums;
 
         public virtual int Id { get; set; }
-        public virtual IList<Album> Albums
+        public virtual ISet<Album> Albums
         {
             get { return _albums; }
             set { _albums = value; }
         } 
         public virtual string MusicBrainzId { get; set; }
         public virtual string Name { get; set; }
-        public virtual IList<Track> Tracks
+        public virtual ISet<Track> Tracks
         {
             get { return _tracks; }
             set { _tracks = value; }
@@ -23,8 +23,8 @@ namespace Howler.Core.MediaLibrary.Entities
 
         public Artist()
         {
-            _albums = new List<Album>();
-            _tracks = new List<Track>();
+            _albums = new HashedSet<Album>();
+            _tracks = new HashedSet<Track>();
         }
 
         public virtual void AddAlbum(Album album)

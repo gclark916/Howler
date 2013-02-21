@@ -1,14 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using Iesi.Collections.Generic;
 
 namespace Howler.Core.MediaLibrary.Entities
 {
     class Genre
     {
-        private IList<Track> _tracks;
+        private ISet<Track> _tracks;
 
         public virtual int Id { get; set; }
         public virtual string Name { get; set; }
-        public virtual IList<Track> Tracks
+        public virtual ISet<Track> Tracks
         {
             get { return _tracks; }
             set { _tracks = value; }
@@ -16,7 +16,7 @@ namespace Howler.Core.MediaLibrary.Entities
 
         public Genre()
         {
-            _tracks = new List<Track>();
+            _tracks = new HashedSet<Track>();
         }
 
         public virtual void AddTrack(Track track)

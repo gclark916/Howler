@@ -22,6 +22,22 @@ namespace Howler.Core.Tagging
             return rating;
         }
 
+        public static uint? GetRatingNullableUInt32(this Tag tag)
+        {
+            int rating = 0;
+            int playcount;
+            var id3V2Tag = tag as TagLib.Id3v2.Tag;
+            if (id3V2Tag != null)
+                ID3v2Tagger.GetRatingAndPlayCount(id3V2Tag, out rating, out playcount);
+            else
+            {
+                var xiphCommentTag = tag as XiphComment;
+                if (xiphCommentTag != null)
+                    OggTagger.GetRatingAndPlayCount(xiphCommentTag, out rating, out playcount);
+            }
+            return rating < 0 ? null : (uint?)rating;
+        }
+
         public static string GetDate(this Tag tag)
         {
             Tag dateTag = tag;

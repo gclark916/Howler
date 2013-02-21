@@ -32,6 +32,7 @@ namespace Howler.Core.MediaLibrary.Mappings
             Map(track => track.Rating);
             Map(track => track.SampleRate);
             Map(track => track.Size);
+            Map(track => track.TagLibHash);
             Map(track => track.Title);
             Map(track => track.TrackNumber);
         }
