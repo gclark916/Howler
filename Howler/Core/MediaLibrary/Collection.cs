@@ -43,14 +43,10 @@ namespace Howler.Core.MediaLibrary
 
         private static void BuildSchema(Configuration config)
         {
-            // delete the existing db on each run
-            //if (File.Exists(DbFile))
-            //    File.Delete(DbFile);
+            bool fileExists = System.IO.File.Exists(DbFile);
 
-            // this NHibernate tool takes a configuration (with mapping info in)
-            // and exports a database schema from it
-            new SchemaExport(config)
-                .Create(false, false);
+            // Only apply schema if file does not exist
+            new SchemaExport(config).Create(false, !fileExists);
         }
 
         public void ImportDirectory(String path)
@@ -62,44 +58,36 @@ namespace Howler.Core.MediaLibrary
             IEnumerable<string> newFiles = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
                 .Where(s => extensions.Any(ext => String.Compare(ext, Path.GetExtension(s), StringComparison.OrdinalIgnoreCase) == 0));
 
-            var db = _session;
+            var session = _session;
+            using (var scope = session.BeginTransaction())
             {
-                using (var scope = db.BeginTransaction())
+                int fileCount = 1;
+                var enumerable = newFiles as string[] ?? newFiles.ToArray();
+                foreach (string file in enumerable)
                 {
-                    int fileCount = 1;
-                    var enumerable = newFiles as string[] ?? newFiles.ToArray();
-                    foreach (string file in enumerable)
+                    if (fileCount%20 == 0)
                     {
-                        if (fileCount%20 == 0)
-                        {
-                            db.Flush();
-                            db.Clear();
-                        }
-                        var startTime = DateTime.Now;
-                        ImportFile(file, db);
-                        var span = DateTime.Now.Subtract(startTime);
-                        Console.WriteLine("Imported file {0}/{1} {2}", fileCount++, enumerable.Count(), span.TotalMilliseconds);
+                        session.Flush();
+                        session.Clear();
                     }
+                    var startTime = DateTime.Now;
+                    ImportFile(file, session);
+                    var span = DateTime.Now.Subtract(startTime);
+                    Console.WriteLine("Imported file {0}/{1} {2}", fileCount++, enumerable.Count(), span.TotalMilliseconds);
+                }
 
-                    try
-                    {
-                        scope.Commit();
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e);
-                    }
-                    finally
-                    {
-                        //scope.Commit();
-                        //db.Flush();
-                        //db.Connection.Close();
-                    }
+                try
+                {
+                    scope.Commit();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
                 }
             }
         }
 
-        private void ImportFile(string filePath, ISession db)
+        private void ImportFile(string filePath, ISession session)
         {
             using (var file = TagLib.File.Create(filePath))
             {
@@ -138,7 +126,7 @@ namespace Howler.Core.MediaLibrary
                 string tagLibHash = md5.GetMd5Hash(String.Concat(tagLibStrings));
 
                 IEnumerable<Track> tracksWithPath =
-                    (from track in db.Query<Track>()
+                    (from track in session.Query<Track>()
                      where track.Path == filePath
                      select track)
                      .ToList();
@@ -150,71 +138,73 @@ namespace Howler.Core.MediaLibrary
                         .Where(t => String.Compare(t.TagLibHash, tagLibHash, StringComparison.Ordinal) == 0)
                         .ToList();
                     if (!tracksWithPathAndHash.Any())
-                        UpdateTrackInDatabase(filePath, file, db, tagLibHash, tracksWithPath.First());
+                        UpdateTrackInDatabase(filePath, file, session, tagLibHash, tracksWithPath.First());
                 }
                 else
-                    AddTrackToDatabase(filePath, file, db, tagLibHash);
+                    AddTrackToDatabase(filePath, file, session, tagLibHash);
             }
         }
 
-        private void AddTrackToDatabase(string filePath, TagLib.File file, ISession db, string tagLibHash)
+        private void AddTrackToDatabase(string filePath, TagLib.File file, ISession session, string tagLibHash)
         {
-            Album trackAlbum = addNonTrackEntitiesAndReturnAlbum(file, db);
+            Album trackAlbum = AddNonTrackEntitiesAndReturnAlbum(file, session);
 
+            FileInfo fileInfo = new FileInfo(filePath);
             Track newTrack = new Track
             {
-                Path = filePath,
-                Title = file.Tag.Title,
                 Album = trackAlbum,
-                Duration = (UInt64)file.Properties.Duration.TotalMilliseconds,
-                DateAdded = DateTime.Now,
                 Bitrate = (uint) file.Properties.AudioBitrate,
-                ChannelCount = (uint) file.Properties.AudioChannels,
-                SampleRate = (uint) file.Properties.AudioSampleRate,
                 BitsPerSample = (uint) file.Properties.BitsPerSample,
-                Codec = file.Properties.Codecs.First().Description,
-                Playcount = 0,
-                Size = (ulong) file.Length,
-                TagLibHash = tagLibHash,
-                TrackNumber = file.Tag.Track,
-                Date = file.Tag.GetDate(),
-                MusicBrainzId = file.Tag.MusicBrainzTrackId,
                 Bpm = file.Tag.BeatsPerMinute == 0 ? (uint?)null : file.Tag.BeatsPerMinute,
-                Rating = file.Tag.GetRatingNullableUInt32()
+                ChannelCount = (uint) file.Properties.AudioChannels,
+                Codec = file.Properties.Codecs.First().Description,
+                Date = file.Tag.GetDate(),
+                DateAdded = DateTime.Now,
+                DiscNumber = file.Tag.Disc > 0 ? (uint?)file.Tag.Disc : null,
+                Duration = (UInt64)file.Properties.Duration.TotalMilliseconds,
+                MusicBrainzId = file.Tag.MusicBrainzTrackId,
+                Path = filePath,
+                Playcount = 0,
+                Rating = file.Tag.GetRatingNullableUInt32(),
+                SampleRate = (uint) file.Properties.AudioSampleRate,
+                Size = (ulong) fileInfo.Length,
+                TagLibHash = tagLibHash,
+                Title = file.Tag.Title,
+                TrackNumber = file.Tag.Track > 0 ? (uint?)file.Tag.Track : null,
             };
 
-            IEnumerable<Artist> trackArtists = GetTrackArtistsForTag(db, file.Tag);
+            IEnumerable<Artist> trackArtists = GetTrackArtistsForTag(session, file.Tag);
 
             foreach (Artist trackArtist in trackArtists)
             {
                 newTrack.Artists.Add(trackArtist);
                 trackArtist.Tracks.Add(newTrack);
-                db.Update(trackArtist);
+                session.Update(trackArtist);
             }
 
-            IEnumerable<Genre> trackGenres = GetTrackGenresForTag(db, file.Tag);
+            IEnumerable<Genre> trackGenres = GetTrackGenresForTag(session, file.Tag);
 
             foreach (Genre genre in trackGenres)
             {
                 newTrack.Genres.Add(genre);
                 genre.Tracks.Add(newTrack);
-                db.Update(genre);
+                session.Update(genre);
             }
 
             file.Dispose();
 
-            db.Save(newTrack);
+            session.Save(newTrack);
         }
 
-        private void UpdateTrackInDatabase(string filePath, TagLib.File file, ISession db, string tagLibHash, Track track)
+        private void UpdateTrackInDatabase(string filePath, TagLib.File file, ISession session, string tagLibHash, Track track)
         {
-            Album trackAlbum = addNonTrackEntitiesAndReturnAlbum(file, db);
+            Album trackAlbum = AddNonTrackEntitiesAndReturnAlbum(file, session);
 
-            IEnumerable<Artist> newTrackArtists = GetTrackArtistsForTag(db, file.Tag);
+            IEnumerable<Artist> newTrackArtists = GetTrackArtistsForTag(session, file.Tag);
             IEnumerable<Artist> artistsToRemove = track.Artists.Where(a => !newTrackArtists.Contains(a));
             IEnumerable<Artist> artistsToAdd = newTrackArtists.Where(a => !track.Artists.Contains(a));
 
-            IEnumerable<Genre> newTrackGenres = GetTrackGenresForTag(db, file.Tag);
+            IEnumerable<Genre> newTrackGenres = GetTrackGenresForTag(session, file.Tag);
             IEnumerable<Genre> genresToRemove = track.Genres.Where(g => !newTrackGenres.Contains(g));
             IEnumerable<Genre> genresToAdd = newTrackGenres.Where(g => !track.Genres.Contains(g));
 
@@ -238,35 +228,35 @@ namespace Howler.Core.MediaLibrary
             foreach (Artist trackArtist in artistsToRemove)
             {
                 trackArtist.Tracks.Remove(track);
-                db.Update(trackArtist);
+                session.Update(trackArtist);
                 track.Artists.Remove(trackArtist);
             }
 
             foreach (Artist trackArtist in artistsToAdd)
             {
                 trackArtist.Tracks.Add(track);
-                db.Update(trackArtist);
+                session.Update(trackArtist);
                 track.Artists.Add(trackArtist);
             }
 
             foreach (Genre genre in genresToRemove)
             {
                 genre.Tracks.Remove(track);
-                db.Update(genre);
+                session.Update(genre);
                 track.Genres.Remove(genre);
             }
 
             foreach (Genre genre in genresToAdd)
             {
                 genre.Tracks.Add(track);
-                db.Update(genre);
+                session.Update(genre);
                 track.Genres.Add(genre);
             }
         }
 
-        private IEnumerable<Genre> GetTrackGenresForTag(ISession db, Tag tag)
+        private IEnumerable<Genre> GetTrackGenresForTag(ISession session, Tag tag)
         {
-            var genres = (from genre in db.Query<Genre>()
+            var genres = (from genre in session.Query<Genre>()
                          where tag.Genres.Contains(genre.Name)
                          select genre)
                          .Fetch(g => g.Tracks);
@@ -274,9 +264,9 @@ namespace Howler.Core.MediaLibrary
             return genres;
         }
 
-        private IEnumerable<Artist> GetTrackArtistsForTag(ISession db, Tag tag)
+        private IEnumerable<Artist> GetTrackArtistsForTag(ISession session, Tag tag)
         {
-            var artists = (from artist in db.Query<Artist>()
+            var artists = (from artist in session.Query<Artist>()
                           where tag.Performers.Contains(artist.Name)
                           select artist)
                           .Fetch(a => a.Tracks);
@@ -284,11 +274,11 @@ namespace Howler.Core.MediaLibrary
             return artists;
         }
 
-        private Album addNonTrackEntitiesAndReturnAlbum(TagLib.File file, ISession db)
+        private Album AddNonTrackEntitiesAndReturnAlbum(TagLib.File file, ISession session)
         {
             IEnumerable<string> artistsToAdd = file.Tag.AlbumArtists
                     .Union(file.Tag.Performers)
-                    .Except(from artist in db.Query<Artist>()
+                    .Except(from artist in session.Query<Artist>()
                             select artist.Name
                         , StringComparer.Ordinal)
                     .ToList();
@@ -302,13 +292,13 @@ namespace Howler.Core.MediaLibrary
                         Name = artistName
                     };
 
-                    db.Save(newArtist);
+                    session.Save(newArtist);
                 }
             }
 
             // Add album if necessary
             var albumArtistsQueryable =
-                (from artist in db.Query<Artist>()
+                (from artist in session.Query<Artist>()
                  where file.Tag.AlbumArtists.Contains(artist.Name)
                  select artist)
                  .Fetch(a => a.Albums)
@@ -321,7 +311,7 @@ namespace Howler.Core.MediaLibrary
 
             // matchingAlbumsInDatabase.Count() should be 0 or 1
             IEnumerable<Album> matchingAlbumsInDatabase = 
-                (from album in db.Query<Album>()
+                (from album in session.Query<Album>()
                  where album.Title == file.Tag.Album
                  && album.ArtistsHash == albumArtistsHash
                  select album)
@@ -339,10 +329,10 @@ namespace Howler.Core.MediaLibrary
                 foreach (Artist artist in albumArtists)
                 {
                     artist.Albums.Add(trackAlbum);
-                    db.Update(artist);
+                    session.Update(artist);
                 }
 
-                db.Save(trackAlbum);
+                session.Save(trackAlbum);
             }
             else
             {
@@ -351,7 +341,7 @@ namespace Howler.Core.MediaLibrary
 
             // Add genres if necessary
             IEnumerable<string> genreNamesToAdd = file.Tag.Genres.Except(
-                from genre in db.Query<Genre>()
+                from genre in session.Query<Genre>()
                 select genre.Name, StringComparer.Ordinal);
 
             foreach (string genreName in genreNamesToAdd)
@@ -361,7 +351,7 @@ namespace Howler.Core.MediaLibrary
                     Name = genreName
                 };
 
-                db.Save(genre);
+                session.Save(genre);
             }
 
             return trackAlbum;

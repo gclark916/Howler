@@ -26,12 +26,40 @@ namespace Howler.Core.Tagging
         {
             int rating = 0;
             int playcount;
-            var id3V2Tag = tag as TagLib.Id3v2.Tag;
+
+            var childTag = tag;
+            var combinedTag = tag as CombinedTag;
+            if (combinedTag != null)
+            {
+                var tags = combinedTag.Tags;
+                foreach (Tag subTag in tags)
+                {
+                    var subXiphCommentTag = subTag as XiphComment;
+                    if (subXiphCommentTag != null)
+                    {
+                        childTag = subTag;
+                        break;
+                    }
+
+                    var subFlacMetadataTag = subTag as Metadata;
+                    if (subFlacMetadataTag != null)
+                    {
+                        childTag = subFlacMetadataTag.GetComment(false, null);
+                        break;
+                    }
+
+                    var subId3V2Tag = subTag as TagLib.Id3v2.Tag;
+                    if (subId3V2Tag != null)
+                        childTag = subTag;
+                }
+            }
+
+            var id3V2Tag = childTag as TagLib.Id3v2.Tag;
             if (id3V2Tag != null)
                 ID3v2Tagger.GetRatingAndPlayCount(id3V2Tag, out rating, out playcount);
             else
             {
-                var xiphCommentTag = tag as XiphComment;
+                var xiphCommentTag = childTag as XiphComment;
                 if (xiphCommentTag != null)
                     OggTagger.GetRatingAndPlayCount(xiphCommentTag, out rating, out playcount);
             }
