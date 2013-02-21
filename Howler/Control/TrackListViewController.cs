@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using Gdk;
+using GLib;
 using Gtk;
 using Howler.Core.MediaLibrary;
 using Howler.Core.MediaLibrary.Entities;
@@ -19,8 +18,10 @@ namespace Howler.Control
         private readonly AudioPlayer _audioPlayer;
 
         public ScrolledWindow View { get; private set;  }
-        private readonly TrackListView _trackListView;
-        private readonly TracksListViewSettings _settings;
+        private readonly TrackListView _trackListView = new TrackListView();
+        private readonly TracksListViewSettings _settings = new TracksListViewSettings();
+        private readonly Dictionary<TrackListViewColumn, TrackProperty> _columnsToProperties = new Dictionary<TrackListViewColumn, TrackProperty>();
+        private readonly Dictionary<TrackProperty, TrackListViewColumn> _propertiesToColumns = new Dictionary<TrackProperty, TrackListViewColumn>();
 
         delegate string StringPropertySelector(Track track);
         internal delegate int TrackComparer(Track track1, Track track2);
@@ -29,7 +30,6 @@ namespace Howler.Control
 
         public TrackListViewController(Collection collection, AudioPlayer audioPlayer)
         {
-            _settings = new TracksListViewSettings();
             _settings.Reload();
             if (_settings.ColumnPropertyArray == null || !_settings.ColumnPropertyArray.Any())
             {
@@ -44,14 +44,6 @@ namespace Howler.Control
 
             _audioPlayer = audioPlayer;
 
-            _trackListView = new TrackListView
-                {
-                    HeadersClickable = true,
-                    RulesHint = true
-                };
-
-            _trackListView.RowActivated += TrackListViewOnRowActivated;
-
             _trackListView.Model = new TrackListModel(collection);
 
             int sortColumnId = 0;
@@ -63,6 +55,24 @@ namespace Howler.Control
                 AddColumn(property, sortColumnId++);
             }
 
+            _trackListView.RowActivated += TrackListViewOnRowActivated;
+            _trackListView.ColumnsChanged += TrackListViewOnColumnsChanged;
+            _trackListView.DeleteEvent += (o, args) => Console.WriteLine("Delete");
+            _trackListView.DestroyEvent += (o, args) => Console.WriteLine("DestroyEvent");
+            _trackListView.Destroyed += (sender, args) =>
+                {
+                    Console.WriteLine("Destroyed");
+                    _trackListView.ColumnsChanged -= TrackListViewOnColumnsChanged;
+
+                    foreach (var column in _columnsToProperties.Keys)
+                    {
+                        column.RemoveNotification("width", TrackListViewColumnNotifyHandler);
+                    }
+                };
+            _trackListView.Hidden += (sender, args) => Console.WriteLine("Hidden");
+            _trackListView.Removed += (o, args) => Console.WriteLine("Removed");
+            _trackListView.UnmapEvent += (o, args) => Console.WriteLine("UnmapEvent");
+            _trackListView.Unmapped += (sender, args) => Console.WriteLine("Unmapped");
             _audioPlayer.TrackChanged += AudioPlayerOnTrackChanged;
 
             ((TreeModelSort) _trackListView.Model).DefaultSortFunc = DefaultSortFunc;
@@ -70,8 +80,21 @@ namespace Howler.Control
                 ((TreeModelSort) _trackListView.Model).SetSortColumnId(artistSortColumnId, SortType.Ascending);
 
             View = new ScrolledWindow {_trackListView};
+        }
 
-            _trackListView.AddEvents((int) EventMask.AllEventsMask);
+        private void TrackListViewOnColumnsChanged(object sender, EventArgs eventArgs)
+        {
+            TrackProperty[] trackPropertyArray = new TrackProperty[_trackListView.Columns.Count()];
+            int trackPropertyIndex = 0;
+            foreach (TrackListViewColumn column in _trackListView.Columns)
+            {
+                TrackProperty trackProperty;
+                if (_columnsToProperties.TryGetValue(column, out trackProperty))
+                    trackPropertyArray[trackPropertyIndex++] = trackProperty;
+            }
+
+            _settings.ColumnPropertyArray = trackPropertyArray;
+            _settings.Save();
         }
 
         private static int DefaultSortFunc(TreeModel model, TreeIter iter1, TreeIter iter2)
@@ -140,14 +163,19 @@ namespace Howler.Control
             trackListModel.TrackFilter = trackFilter;
         }
 
-        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId, int columnWidth)
+        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId, TrackProperty property)
         {
-            AddTextColumn(selector, columnName, sortColumnId, (track1, track2) => string.Compare(selector(track1), selector(track2), StringComparison.CurrentCulture), columnWidth);
+            AddTextColumn(selector, columnName, sortColumnId, (track1, track2) => string.Compare(selector(track1), selector(track2), StringComparison.CurrentCulture), property);
         }
 
-        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId, TrackComparer comparer, int columnWidth)
+        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId, TrackComparer comparer, TrackProperty property)
         {
-            TrackListViewColumn genericColumn = new TrackListViewColumn(columnName) {FixedWidth = columnWidth};
+            int fixedWidth;
+            if (!_settings.ColumnWidths.TryGetValue(property, out fixedWidth))
+                fixedWidth = 200;
+            TrackListViewColumn genericColumn = new TrackListViewColumn(columnName) {FixedWidth = fixedWidth};
+            _propertiesToColumns.Add(property, genericColumn);
+            _columnsToProperties.Add(genericColumn, property);
 
             TrackCellRenderer pathCellTextRenderer = new TrackCellRenderer();
             genericColumn.PackStart(pathCellTextRenderer, true);
@@ -176,25 +204,42 @@ namespace Howler.Control
             }
 
             _trackListView.AppendColumn(genericColumn);
+            genericColumn.AddNotification("width", TrackListViewColumnNotifyHandler);
+        }
+
+        private void TrackListViewColumnNotifyHandler(object o, NotifyArgs args)
+        {
+            TrackProperty property;
+            TrackListViewColumn column = o as TrackListViewColumn;
+            if (!_columnsToProperties.TryGetValue((TrackListViewColumn) o, out property))
+                return;
+
+            int width;
+            if (!_settings.ColumnWidths.TryGetValue(property, out width))
+                return;
+
+            if (column == null || width == column.Width || column.Width <= 5)
+                return;
+
+            _settings.ColumnWidths.Remove(property);
+            _settings.ColumnWidths.Add(property, column.Width);
+            _settings.Save();
         }
 
         private void AddColumn(TrackProperty property, int sortColumnId)
         {
             string description = Extensions.GetEnumDescription(property);
-            int columnWidth;
-            if (!_settings.ColumnWidths.TryGetValue(property, out columnWidth))
-                columnWidth = 200;
             switch (property)
             {
                 case TrackProperty.Album:
-                    AddTextColumn(t => t.Album != null ? t.Album.Title : null, description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Album != null ? t.Album.Title : null, description, sortColumnId, property);
                     break;
                 case TrackProperty.Artist:
-                    AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), description, sortColumnId, property);
                     break;
                 case TrackProperty.AlbumArtist:
                     AddTextColumn(t => (t.Album == null || t.Album.Artists == null || t.Artists.Count == 0) ? null
-                        : String.Join("; ", t.Album.Artists.Select(a => a.Name)), description, sortColumnId, columnWidth);
+                        : String.Join("; ", t.Album.Artists.Select(a => a.Name)), description, sortColumnId, property);
                     break;
                 case TrackProperty.Duration:
                     AddTextColumn(t =>
@@ -204,34 +249,34 @@ namespace Howler.Control
                             ? String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds)
                             : String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
                         return length;
-                    }, description, sortColumnId, columnWidth);
+                    }, description, sortColumnId, property);
                     break;
                 case TrackProperty.Bitrate:
-                    AddTextColumn(t => string.Format("{0} kbps", t.Bitrate), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => string.Format("{0} kbps", t.Bitrate), description, sortColumnId, property);
                     break;
                 case TrackProperty.BitsPerSample:
-                    AddTextColumn(t => t.BitsPerSample.ToString(CultureInfo.InvariantCulture), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.BitsPerSample.ToString(CultureInfo.InvariantCulture), description, sortColumnId, property);
                     break;
                 case TrackProperty.Bpm:
-                    AddTextColumn(t => t.Bpm.ToString(), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Bpm.ToString(), description, sortColumnId, property);
                     break;
                 case TrackProperty.ChannelCount:
-                    AddTextColumn(t => t.ChannelCount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.ChannelCount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, property);
                     break;
                 case TrackProperty.Codec:
-                    AddTextColumn(t => t.Codec, description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Codec, description, sortColumnId, property);
                     break;
                 case TrackProperty.Date:
-                    AddTextColumn(t => t.Date, description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Date, description, sortColumnId, property);
                     break;
                 case TrackProperty.DateAdded:
-                    AddTextColumn(t => string.Format("{0} {1}", t.DateAdded.ToShortDateString(), t.DateAdded.ToLongTimeString()), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => string.Format("{0} {1}", t.DateAdded.ToShortDateString(), t.DateAdded.ToLongTimeString()), description, sortColumnId, property);
                     break;
                 case TrackProperty.DateLastPlayed:
                     AddTextColumn(t => t.DateLastPlayed.HasValue && t.DateLastPlayed.Value > DateTime.MinValue
                         ? string.Format("{0} {1}", t.DateLastPlayed.Value.ToShortDateString(), t.DateLastPlayed.Value.ToLongTimeString()) 
                         : null,
-                        description, sortColumnId, columnWidth);
+                        description, sortColumnId, property);
                     break;
                 case TrackProperty.DiscNumber:
                     AddTextColumn(t => t.DiscNumber.ToString(), description, sortColumnId, (track1, track2) =>
@@ -239,38 +284,38 @@ namespace Howler.Control
                             uint discNumber1 = track1.DiscNumber ?? 0;
                             uint discNumber2 = track2.DiscNumber ?? 0;
                             return discNumber1.CompareTo(discNumber2);
-                        }, columnWidth);
+                        }, property);
                     break;
                 case TrackProperty.Genre:
-                    AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Genres.Select(g => g.Name)), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Genres.Select(g => g.Name)), description, sortColumnId, property);
                     break;
                 case TrackProperty.MusicBrainzAlbumId:
-                    AddTextColumn(t => t.Album != null ? t.Album.MusicBrainzId : null, description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Album != null ? t.Album.MusicBrainzId : null, description, sortColumnId, property);
                     break;
                 case TrackProperty.MusicBrainzReleaseId:
-                    AddTextColumn(t => t.MusicBrainzId, description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.MusicBrainzId, description, sortColumnId, property);
                     break;
                 case TrackProperty.Path:
-                    AddTextColumn(t => t.Path, description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Path, description, sortColumnId, property);
                     break;
                 case TrackProperty.Playcount:
-                    AddTextColumn(t => t.Playcount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Playcount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, property);
                     break;
                 case TrackProperty.Rating:
                     // TODO: implement stars
-                    AddTextColumn(t => t.Rating.ToString(), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Rating.ToString(), description, sortColumnId, property);
                     break;
                 case TrackProperty.SampleRate:
-                    AddTextColumn(t => string.Format("{0} Hz", t.SampleRate), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => string.Format("{0} Hz", t.SampleRate), description, sortColumnId, property);
                     break;
                 case TrackProperty.Size:
-                    AddTextColumn(t => string.Format("{0:N1} MB", (double)t.Size / (1024 * 1024)), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => string.Format("{0:N1} MB", (double)t.Size / (1024 * 1024)), description, sortColumnId, property);
                     break;
                 case TrackProperty.Summary:
-                    AddTextColumn(t => string.Format("{0} - {1}", String.Join("; ", t.Artists.Select(a => a.Name)), t.Title), description, sortColumnId, columnWidth);
+                    AddTextColumn(t => string.Format("{0} - {1}", String.Join("; ", t.Artists.Select(a => a.Name)), t.Title), description, sortColumnId, property);
                     break;
                 case TrackProperty.Title:
-                    AddTextColumn(t => t.Title, description, sortColumnId, columnWidth);
+                    AddTextColumn(t => t.Title, description, sortColumnId, property);
                     break;
                 case TrackProperty.TrackNumber:
                     AddTextColumn(t => t.TrackNumber.ToString(), description, sortColumnId, (track1, track2) =>
@@ -278,83 +323,12 @@ namespace Howler.Control
                             var num1 = track1.TrackNumber ?? Int64.MinValue;
                             var num2 = track2.TrackNumber ?? Int64.MinValue;
                             return num1.CompareTo(num2);
-                        }, columnWidth);
+                        }, property);
                     break;
                 default:
                     Console.WriteLine("Column not implemented for track property name {0}", description);
                     break;
             }
-        }
-    }
-
-    class TracksListViewSettings : ApplicationSettingsBase
-    {
-        private static readonly TrackProperty[] DefaultColumnPropertyArray = { TrackProperty.TrackNumber, TrackProperty.Title, TrackProperty.Artist, TrackProperty.Album, TrackProperty.AlbumArtist, TrackProperty.Date, TrackProperty.Genre, TrackProperty.Rating, TrackProperty.Bitrate, TrackProperty.Size, TrackProperty.DateAdded, TrackProperty.Codec, TrackProperty.Path };
-
-        private static readonly Dictionary<TrackProperty, int> DefaultColumnWidths = new Dictionary<TrackProperty, int>
-            {
-                {TrackProperty.Album, 200},
-                {TrackProperty.AlbumArtist, 200},
-                {TrackProperty.Artist, 200},
-                {TrackProperty.Bitrate, 80},
-                {TrackProperty.BitsPerSample, 30},
-                {TrackProperty.Bpm, 50},
-                {TrackProperty.ChannelCount, 20},
-                {TrackProperty.Codec, 100},
-                {TrackProperty.Date, 200},
-                {TrackProperty.DateAdded, 200},
-                {TrackProperty.DateLastPlayed, 200},
-                {TrackProperty.DiscNumber, 20},
-                {TrackProperty.Duration, 50},
-                {TrackProperty.Genre, 200},
-                {TrackProperty.MusicBrainzAlbumId, 200},
-                {TrackProperty.MusicBrainzReleaseId, 200},
-                {TrackProperty.Path, 200},
-                {TrackProperty.Playcount, 30},
-                {TrackProperty.Rating, 200},
-                {TrackProperty.SampleRate, 50},
-                {TrackProperty.Size, 50},
-                {TrackProperty.Summary, 200},
-                {TrackProperty.Title, 200},
-                {TrackProperty.TrackNumber, 30}
-            };
-
-        [UserScopedSetting]
-        [SettingsSerializeAs(SettingsSerializeAs.Binary)]
-        public TrackProperty[] ColumnPropertyArray
-        {
-            get
-            {
-                return (TrackProperty[])this["ColumnPropertyArray"];
-            }
-            set
-            {
-                this["ColumnPropertyArray"] = (TrackProperty[])value;
-            }
-        }
-
-        [UserScopedSetting]
-        [SettingsSerializeAs(SettingsSerializeAs.Binary)]
-        public Dictionary<TrackProperty, int> ColumnWidths
-        {
-            get
-            {
-                return (Dictionary<TrackProperty, int>)this["ColumnWidths"];
-            }
-            set
-            {
-                this["ColumnWidths"] = (Dictionary<TrackProperty, int>)value;
-            }
-        }
-
-        public void LoadDefaultColumnPropertyArray()
-        {
-            ColumnPropertyArray = DefaultColumnPropertyArray;
-        }
-
-        public void LoadDefaultColumnWidths()
-        {
-            ColumnWidths = DefaultColumnWidths;
         }
     }
 }

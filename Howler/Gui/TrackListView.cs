@@ -9,14 +9,16 @@ namespace Howler.Gui
 {
     class TrackListView : TreeView
     {
-        public readonly TracksListViewTooltip Tooltip;
+        public readonly TrackListViewTooltip Tooltip;
         private DateTime _scrollStarted;
 
         public TrackListView()
         {
-            _scrollStarted = DateTime.MinValue;
-            Tooltip = new TracksListViewTooltip(this);
+            HeadersClickable = true;
+            RulesHint = true;
             FixedHeightMode = true;
+            _scrollStarted = DateTime.MinValue;
+            Tooltip = new TrackListViewTooltip(this);
         }
 
         protected override bool OnScrollEvent(EventScroll evnt)
@@ -91,12 +93,12 @@ namespace Howler.Gui
         }
     }
 
-    class TracksListViewTooltip : Window
+    class TrackListViewTooltip : Window
     {
         protected internal readonly Label Label;
         private readonly TrackListView _trackListView;
 
-        public TracksListViewTooltip(TrackListView trackListView) : base(WindowType.Popup)
+        public TrackListViewTooltip(TrackListView trackListView) : base(WindowType.Popup)
         {
             _trackListView = trackListView;
 
