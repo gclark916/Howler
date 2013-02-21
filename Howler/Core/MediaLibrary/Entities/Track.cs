@@ -3,7 +3,7 @@ using Iesi.Collections.Generic;
 
 namespace Howler.Core.MediaLibrary.Entities
 {
-    class Track
+    public class Track
     {
         private ISet<Artist> _artists;
         private ISet<Genre> _genres; 

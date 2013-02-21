@@ -3,11 +3,12 @@ using Howler.Core.MediaLibrary.Entities;
 
 namespace Howler.Core.MediaLibrary.Mappings
 {
-    class ArtistMap : ClassMap<Artist>
+    public class ArtistMap : ClassMap<Artist>
     {
         public ArtistMap()
         {
-            Id(artist => artist.Id);
+            Id(artist => artist.Id)
+                .GeneratedBy.HiLo("1000");
             HasManyToMany(artist => artist.Albums)
                 .Inverse()
                 .Cascade.SaveUpdate()

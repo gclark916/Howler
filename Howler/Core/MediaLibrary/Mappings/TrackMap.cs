@@ -3,7 +3,7 @@ using Howler.Core.MediaLibrary.Entities;
 
 namespace Howler.Core.MediaLibrary.Mappings
 {
-    class TrackMap : ClassMap<Track>
+    public class TrackMap : ClassMap<Track>
     {
         public TrackMap()
         {

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using FluentNHibernate.Mapping;
+﻿using FluentNHibernate.Mapping;
 using Howler.Core.MediaLibrary.Entities;
 
 namespace Howler.Core.MediaLibrary.Mappings
 {
-    class GenreMap : ClassMap<Genre>
+    public class GenreMap : ClassMap<Genre>
     {
         public GenreMap()
         {

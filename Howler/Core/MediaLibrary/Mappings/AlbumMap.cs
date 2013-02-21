@@ -3,7 +3,7 @@ using Howler.Core.MediaLibrary.Entities;
 
 namespace Howler.Core.MediaLibrary.Mappings
 {
-    class AlbumMap : ClassMap<Album>
+    public class AlbumMap : ClassMap<Album>
     {
         public AlbumMap()
         {
@@ -16,8 +16,7 @@ namespace Howler.Core.MediaLibrary.Mappings
             Map(album => album.DiscCount);
             Map(album => album.MusicBrainzId);
             Map(album => album.Title)
-                .UniqueKey("UK_ArtistsHash_Title").Not.Nullable()
-                .Index("IDX_Album_Title");
+                .UniqueKey("UK_ArtistsHash_Title").Not.Nullable();
             HasMany(album => album.Tracks)
                 .Inverse()
                 .Cascade.SaveUpdate();

@@ -2,7 +2,7 @@
 
 namespace Howler.Core.MediaLibrary.Entities
 {
-    class Artist
+    public class Artist
     {
         private ISet<Track> _tracks;
         private ISet<Album> _albums;

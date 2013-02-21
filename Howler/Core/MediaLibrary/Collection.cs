@@ -14,7 +14,6 @@ using NHibernate;
 using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
 using TagLib;
-using File = System.IO.File;
 using NHibernate.Linq;
 
 namespace Howler.Core.MediaLibrary
@@ -23,10 +22,12 @@ namespace Howler.Core.MediaLibrary
     {
         private const string DbFile = "..\\Howler2.db";
         private readonly ISessionFactory _sessionFactory;
+        private readonly ISession _session;
 
         public Collection()
         {
             _sessionFactory = CreateSessionFactory();
+            _session = _sessionFactory.OpenSession();
         }
 
         private static ISessionFactory CreateSessionFactory()
@@ -43,13 +44,13 @@ namespace Howler.Core.MediaLibrary
         private static void BuildSchema(Configuration config)
         {
             // delete the existing db on each run
-            if (File.Exists(DbFile))
-                File.Delete(DbFile);
+            //if (File.Exists(DbFile))
+            //    File.Delete(DbFile);
 
             // this NHibernate tool takes a configuration (with mapping info in)
             // and exports a database schema from it
             new SchemaExport(config)
-                .Create(false, true);
+                .Create(false, false);
         }
 
         public void ImportDirectory(String path)
@@ -61,16 +62,23 @@ namespace Howler.Core.MediaLibrary
             IEnumerable<string> newFiles = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
                 .Where(s => extensions.Any(ext => String.Compare(ext, Path.GetExtension(s), StringComparison.OrdinalIgnoreCase) == 0));
 
-            using (ISession db = _sessionFactory.OpenSession())
+            var db = _session;
             {
                 using (var scope = db.BeginTransaction())
                 {
-
-                    //db.Connection.Open();
-
-                    foreach (string file in newFiles)
+                    int fileCount = 1;
+                    var enumerable = newFiles as string[] ?? newFiles.ToArray();
+                    foreach (string file in enumerable)
                     {
+                        if (fileCount%20 == 0)
+                        {
+                            db.Flush();
+                            db.Clear();
+                        }
+                        var startTime = DateTime.Now;
                         ImportFile(file, db);
+                        var span = DateTime.Now.Subtract(startTime);
+                        Console.WriteLine("Imported file {0}/{1} {2}", fileCount++, enumerable.Count(), span.TotalMilliseconds);
                     }
 
                     try
@@ -84,7 +92,7 @@ namespace Howler.Core.MediaLibrary
                     finally
                     {
                         //scope.Commit();
-                        db.Flush();
+                        //db.Flush();
                         //db.Connection.Close();
                     }
                 }
@@ -131,7 +139,7 @@ namespace Howler.Core.MediaLibrary
 
                 IEnumerable<Track> tracksWithPath =
                     (from track in db.Query<Track>()
-                     where String.Compare(track.Path, filePath, StringComparison.Ordinal) == 0
+                     where track.Path == filePath
                      select track)
                      .ToList();
 
@@ -178,12 +186,20 @@ namespace Howler.Core.MediaLibrary
             IEnumerable<Artist> trackArtists = GetTrackArtistsForTag(db, file.Tag);
 
             foreach (Artist trackArtist in trackArtists)
+            {
                 newTrack.Artists.Add(trackArtist);
+                trackArtist.Tracks.Add(newTrack);
+                db.Update(trackArtist);
+            }
 
             IEnumerable<Genre> trackGenres = GetTrackGenresForTag(db, file.Tag);
 
             foreach (Genre genre in trackGenres)
+            {
                 newTrack.Genres.Add(genre);
+                genre.Tracks.Add(newTrack);
+                db.Update(genre);
+            }
 
             file.Dispose();
 
@@ -220,32 +236,50 @@ namespace Howler.Core.MediaLibrary
             track.Rating = file.Tag.GetRatingNullableUInt32();
 
             foreach (Artist trackArtist in artistsToRemove)
+            {
+                trackArtist.Tracks.Remove(track);
+                db.Update(trackArtist);
                 track.Artists.Remove(trackArtist);
+            }
 
             foreach (Artist trackArtist in artistsToAdd)
+            {
+                trackArtist.Tracks.Add(track);
+                db.Update(trackArtist);
                 track.Artists.Add(trackArtist);
+            }
 
             foreach (Genre genre in genresToRemove)
+            {
+                genre.Tracks.Remove(track);
+                db.Update(genre);
                 track.Genres.Remove(genre);
+            }
 
             foreach (Genre genre in genresToAdd)
+            {
+                genre.Tracks.Add(track);
+                db.Update(genre);
                 track.Genres.Add(genre);
+            }
         }
 
         private IEnumerable<Genre> GetTrackGenresForTag(ISession db, Tag tag)
         {
-            var genres = from genre in db.Query<Genre>()
-                         where tag.Genres.Any(s => String.Compare(genre.Name, s, StringComparison.Ordinal) == 0)
-                         select genre;
+            var genres = (from genre in db.Query<Genre>()
+                         where tag.Genres.Contains(genre.Name)
+                         select genre)
+                         .Fetch(g => g.Tracks);
 
             return genres;
         }
 
         private IEnumerable<Artist> GetTrackArtistsForTag(ISession db, Tag tag)
         {
-            var artists = from artist in db.Query<Artist>()
-                          where tag.Performers.Any(s => String.Compare(s, artist.Name, StringComparison.Ordinal) == 0)
-                          select artist;
+            var artists = (from artist in db.Query<Artist>()
+                          where tag.Performers.Contains(artist.Name)
+                          select artist)
+                          .Fetch(a => a.Tracks);
 
             return artists;
         }
@@ -273,20 +307,23 @@ namespace Howler.Core.MediaLibrary
             }
 
             // Add album if necessary
-            var albumArtistsHashSet = 
+            var albumArtistsQueryable =
                 (from artist in db.Query<Artist>()
-                where file.Tag.AlbumArtists.Any(s => String.Compare(s, artist.Name, StringComparison.Ordinal) == 0)
-                select artist)
-                .ToHashSet();
-            Iesi.Collections.Generic.ISet<Artist> albumArtists = new HashedSet<Artist>(albumArtistsHashSet);
+                 where file.Tag.AlbumArtists.Contains(artist.Name)
+                 select artist)
+                 .Fetch(a => a.Albums)
+                 .ToList();
+
+            //var albumArtistsHashSet = albumArtistsQueryable.ToHashSet();
+            var albumArtists = new HashedSet<Artist>(albumArtistsQueryable);
 
             string albumArtistsHash = Album.ComputeArtistsHash(albumArtists);
 
             // matchingAlbumsInDatabase.Count() should be 0 or 1
             IEnumerable<Album> matchingAlbumsInDatabase = 
                 (from album in db.Query<Album>()
-                 where String.Compare(album.Title, file.Tag.Album, StringComparison.Ordinal) == 0
-                 && String.Compare(album.ArtistsHash, albumArtistsHash, StringComparison.Ordinal) == 0
+                 where album.Title == file.Tag.Album
+                 && album.ArtistsHash == albumArtistsHash
                  select album)
                  .ToList();
 
@@ -298,6 +335,12 @@ namespace Howler.Core.MediaLibrary
                         Title = file.Tag.Album,
                         Artists = albumArtists
                     };
+
+                foreach (Artist artist in albumArtists)
+                {
+                    artist.Albums.Add(trackAlbum);
+                    db.Update(artist);
+                }
 
                 db.Save(trackAlbum);
             }
@@ -326,33 +369,29 @@ namespace Howler.Core.MediaLibrary
 
         public IEnumerable<Track> GetTracks()
         {
-            using (var session = _sessionFactory.OpenSession())
+            var session = _session;
+            using (session.BeginTransaction())
             {
-                using (var transaction = session.BeginTransaction())
-                {
-                    var tracks = 
-                        (from track in session.Query<Track>()
-                         select track);
+                var tracks = 
+                    (from track in session.Query<Track>()
+                        select track);
 
-                    return tracks;
-                }
+                return tracks;
             }
         }
 
         public IEnumerable<Artist> GetTrackArtistsAndAlbumArtists()
         {
-            using (var session = _sessionFactory.OpenSession())
+            var session = _session;
+            using (session.BeginTransaction())
             {
-                using (var transaction = session.BeginTransaction())
-                {
-                    var artists = 
-                        from artist in session.Query<Artist>()
-                        where artist.Tracks.Any() || artist.Albums.Any()
-                        orderby artist.Name
-                        select artist;
+                var artists = 
+                    from artist in session.Query<Artist>()
+                    where artist.Tracks.Any() || artist.Albums.Any()
+                    orderby artist.Name
+                    select artist;
 
-                    return artists;
-                }
+                return artists;
             }
         }
     }

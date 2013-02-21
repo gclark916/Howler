@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
-using Howler.Core.Database;
+using Howler.Core.MediaLibrary;
+using Howler.Core.MediaLibrary.Entities;
 using Howler.Gui;
 using Gtk;
 
@@ -78,7 +79,7 @@ namespace Howler.Control
                 };
                 TreeIter someArtistIter = store.AppendValues(artistAndAlbumArtistIter, someArtistRow);
 
-                foreach (Album album in someArtist.Album)
+                foreach (Album album in someArtist.Albums)
                 {
                     Album someAlbum = album;
                     SourceTreeStoreValue someAlbumRow = new SourceTreeStoreValue

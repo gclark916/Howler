@@ -1,8 +1,8 @@
 ﻿using System;
 using Gtk;
+using Howler.Core.MediaLibrary;
 using Howler.Core.Playback;
 using Howler.Gui;
-using Howler.Core.Database;
 
 namespace Howler.Control
 {
@@ -12,8 +12,8 @@ namespace Howler.Control
         private readonly Collection _collection;
         private readonly TrackListViewController _trackListViewController;
         private readonly SourceTreeViewController _sourceTreeViewController;
-        private Widget _nowPlayingPanel;
-        private PlayerControlPanelController _playerControlPanelController;
+        private readonly Widget _nowPlayingPanel;
+        private readonly PlayerControlPanelController _playerControlPanelController;
 
         MainController()
         {
@@ -23,7 +23,7 @@ namespace Howler.Control
             };
             _collection = new Collection();
             //_collection.ImportDirectory("F:\\Google Music\\");
-            //_collection.ImportDirectory("F:\\Music\\Death Grips\\Exmilitary");
+            //_collection.ImportDirectory("F:\\Music\\Death Grips\\");
 
             AudioPlayer audioPlayer = new AudioPlayer();
             _trackListViewController = new TrackListViewController(_collection, audioPlayer);

@@ -5,9 +5,10 @@ using System.Globalization;
 using System.Linq;
 using Gdk;
 using Gtk;
+using Howler.Core.MediaLibrary;
+using Howler.Core.MediaLibrary.Entities;
 using Howler.Core.Playback;
 using Howler.Gui;
-using Howler.Core.Database;
 using Howler.Util;
 
 namespace Howler.Control
@@ -29,6 +30,11 @@ namespace Howler.Control
         {
             _settings = new TracksListViewSettings();
             _settings.Reload();
+            if (_settings.ColumnPropertyArray == null || !_settings.ColumnPropertyArray.Any())
+            {
+                _settings.LoadDefaultColumnPropertyArray();
+                _settings.Save();
+            }
             _audioPlayer = audioPlayer;
 
             _trackListView = new TrackListView
@@ -192,7 +198,7 @@ namespace Howler.Control
                     AddTextColumn(t => t.BitsPerSample.ToString(CultureInfo.InvariantCulture), description, sortColumnId);
                     break;
                 case TrackProperty.Bpm:
-                    AddTextColumn(t => t.BPM.ToString(), description, sortColumnId);
+                    AddTextColumn(t => t.Bpm.ToString(), description, sortColumnId);
                     break;
                 case TrackProperty.ChannelCount:
                     AddTextColumn(t => t.ChannelCount.ToString(CultureInfo.InvariantCulture), description, sortColumnId);
@@ -261,6 +267,8 @@ namespace Howler.Control
 
     class TracksListViewSettings : ApplicationSettingsBase
     {
+        private static readonly TrackProperty[] DefaultColumnPropertyArray = { TrackProperty.TrackNumber, TrackProperty.Title, TrackProperty.Artist, TrackProperty.Album, TrackProperty.AlbumArtist, TrackProperty.Date, TrackProperty.Genre, TrackProperty.Rating, TrackProperty.Bitrate, TrackProperty.Size, TrackProperty.DateAdded, TrackProperty.Codec, TrackProperty.Path };
+
         [UserScopedSetting]
         [SettingsSerializeAs(SettingsSerializeAs.Binary)]
         public TrackProperty[] ColumnPropertyArray
@@ -277,7 +285,11 @@ namespace Howler.Control
 
         public TracksListViewSettings()
         {
-            ColumnPropertyArray = new[] { TrackProperty.TrackNumber, TrackProperty.Title, TrackProperty.Artist, TrackProperty.Album, TrackProperty.AlbumArtist, TrackProperty.Date, TrackProperty.Genre, TrackProperty.Rating, TrackProperty.Bitrate, TrackProperty.Size, TrackProperty.DateAdded, TrackProperty.Codec, TrackProperty.Path };
+        }
+
+        public void LoadDefaultColumnPropertyArray()
+        {
+            ColumnPropertyArray = DefaultColumnPropertyArray;
         }
     }
 }

@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Gtk;
-using Howler.Core.Database;
+using Howler.Core.MediaLibrary;
+using Howler.Core.MediaLibrary.Entities;
 using Howler.Core.Playback;
 
 namespace Howler.Control

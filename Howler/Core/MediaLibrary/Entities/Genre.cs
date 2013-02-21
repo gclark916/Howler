@@ -2,7 +2,7 @@
 
 namespace Howler.Core.MediaLibrary.Entities
 {
-    class Genre
+    public class Genre
     {
         private ISet<Track> _tracks;
 

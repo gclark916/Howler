@@ -1,7 +1,7 @@
 ﻿using System;
 using Gst;
 using Gst.BasePlugins;
-using Howler.Core.Database;
+using Howler.Core.MediaLibrary.Entities;
 
 namespace Howler.Core.Playback
 {

@@ -5,11 +5,23 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Security.Cryptography;
+using Iesi.Collections.Generic;
+using NHibernate.Linq;
 
 namespace Howler.Util
 {
     public static class Extensions
     {
+        public static HashedSet<T> ToHashedSet<T>(this NhQueryable<T> source)
+        {
+            var result = new HashedSet<T>();
+            foreach (T t in source)
+            {
+                result.Add(t);
+            }
+            return result;
+        }
+
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> source)
         {
             return new HashSet<T>(source);
