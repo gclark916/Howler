@@ -10,7 +10,7 @@ namespace Howler.Control
     {
         private readonly Dictionary<Track, TreeIter> _trackIters = new Dictionary<Track, TreeIter>();
 
-        public Track CurrentTrack { get; set; }
+        public Track CurrentTrack { get; protected set; }
 
         public TrackListStore(IEnumerable<Track> tracks)
             : base(typeof(Track), typeof(int))

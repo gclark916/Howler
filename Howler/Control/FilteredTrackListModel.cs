@@ -15,7 +15,7 @@ namespace Howler.Control
         private TrackFilter _trackFilter = track => true;
         private readonly Dictionary<Track, TreeIter> _unfilteredTrackIters;
 
-        public Track CurrentTrack { get; set; }
+        public Track CurrentTrack { get; protected set; }
 
         public TrackFilter Filter
         {

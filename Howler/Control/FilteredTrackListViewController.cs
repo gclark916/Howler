@@ -42,7 +42,7 @@ namespace Howler.Control
 
         public FilteredTrackListViewController(Collection collection, AudioPlayer audioPlayer) : 
             base(new FilteredTrackListModel(collection), 
-            new TrackListViewSettings("FilteredTrackListView", DefaultColumnPropertyArray, DefaultColumnWidths), 
+            new BaseTrackListViewControllerSettings("FilteredTrackListView", DefaultColumnPropertyArray, DefaultColumnWidths), 
             audioPlayer)
         {
             TrackListViewColumn column;

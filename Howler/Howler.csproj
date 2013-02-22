@@ -144,6 +144,7 @@
   <ItemGroup>
     <Compile Include="Control\BaseTrackListViewController.cs" />
     <Compile Include="Control\ITrackListModel.cs" />
+    <Compile Include="Control\NowPlayingPanel.cs" />
     <Compile Include="Control\NowPlayingPanelController.cs" />
     <Compile Include="Control\NowPlayingTrackListViewController.cs" />
     <Compile Include="Control\PlayerControlPanelController.cs" />
@@ -152,7 +153,7 @@
     <Compile Include="Control\TrackListStore.cs" />
     <Compile Include="Control\TrackProperty.cs" />
     <Compile Include="Control\FilteredTrackListViewController.cs" />
-    <Compile Include="Control\TrackListViewSettings.cs" />
+    <Compile Include="Control\BaseTrackListViewControllerSettings.cs" />
     <Compile Include="Core\Database\Collection.cs" />
     <Compile Include="Core\Database\Collection.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -174,6 +175,7 @@
     <Compile Include="Core\Tagging\ID3v2Tagger.cs" />
     <Compile Include="Core\Tagging\OggTagger.cs" />
     <Compile Include="Core\Tagging\TagLibExtensions.cs" />
+    <Compile Include="Gui\CoverArtPanel.cs" />
     <Compile Include="Gui\MainWindow.cs" />
     <Compile Include="Control\MainController.cs" />
     <Compile Include="Gui\PlayerControlPanel.cs" />

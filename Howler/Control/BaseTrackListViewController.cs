@@ -12,20 +12,21 @@ using Howler.Util;
 
 namespace Howler.Control
 {
-    abstract class BaseTrackListViewController
+    internal abstract class BaseTrackListViewController : ITrackSelector
     {
         protected readonly AudioPlayer AudioPlayer;
 
-        public ScrolledWindow View { get; private set;  }
+        protected readonly Dictionary<TrackListViewColumn, TrackProperty> ColumnsToProperties =
+            new Dictionary<TrackListViewColumn, TrackProperty>();
+
+        protected readonly Dictionary<TrackProperty, TrackListViewColumn> PropertiesToColumns =
+            new Dictionary<TrackProperty, TrackListViewColumn>();
+
         protected readonly TrackListView TrackListView = new TrackListView();
-        private readonly TrackListViewSettings _settings;
-        protected readonly Dictionary<TrackListViewColumn, TrackProperty> ColumnsToProperties = new Dictionary<TrackListViewColumn, TrackProperty>();
-        protected readonly Dictionary<TrackProperty, TrackListViewColumn> PropertiesToColumns = new Dictionary<TrackProperty, TrackListViewColumn>();
+        private readonly BaseTrackListViewControllerSettings _settings;
 
-        delegate string StringPropertySelector(Track track);
-        delegate int TrackComparer(Track track1, Track track2);
-
-        protected BaseTrackListViewController(ITrackListModel model, TrackListViewSettings settings, AudioPlayer audioPlayer)
+        protected BaseTrackListViewController(ITrackListModel model, BaseTrackListViewControllerSettings settings,
+                                              AudioPlayer audioPlayer)
         {
             _settings = settings;
             _settings.Reload();
@@ -52,6 +53,7 @@ namespace Howler.Control
 
             TrackListView.RowActivated += TrackListViewOnRowActivated;
             TrackListView.ColumnsChanged += TrackListViewOnColumnsChanged;
+            TrackListView.Selection.Changed += SelectionOnChanged;
             TrackListView.DeleteEvent += (o, args) => Console.WriteLine("Delete");
             TrackListView.DestroyEvent += (o, args) => Console.WriteLine("DestroyEvent");
             TrackListView.Destroyed += (sender, args) =>
@@ -75,6 +77,24 @@ namespace Howler.Control
             View = new ScrolledWindow {TrackListView};
         }
 
+        private void SelectionOnChanged(object sender, EventArgs eventArgs)
+        {
+            ITrackListModel model = TrackListView.Model as ITrackListModel;
+            TreePath[] rows = TrackListView.Selection.GetSelectedRows();
+            Debug.Assert(model != null, "model != null");
+
+            TreeIter iter;
+            model.GetIter(out iter, rows[0]);
+            Track track = (Track) model.GetValue(iter, 0);
+
+            var args = new SelectedTrackHandlerArgs {SelectedTrack = track};
+            SelectedTrackHandler handler = SelectedTrack;
+            if (handler != null)
+                handler(this, args);
+        }
+
+        public ScrolledWindow View { get; private set; }
+
         private void TrackListViewOnColumnsChanged(object sender, EventArgs eventArgs)
         {
             TrackProperty[] trackPropertyArray = new TrackProperty[TrackListView.Columns.Count()];
@@ -92,9 +112,10 @@ namespace Howler.Control
 
         private static int DefaultSortFunc(TreeModel model, TreeIter iter1, TreeIter iter2)
         {
-            Track track1 = (Track)model.GetValue(iter1, 0);
-            Track track2 = (Track)model.GetValue(iter2, 0);
-            int result = string.Compare(string.Join("", track1.Artists), string.Join("", track2.Artists), StringComparison.CurrentCulture);
+            Track track1 = (Track) model.GetValue(iter1, 0);
+            Track track2 = (Track) model.GetValue(iter2, 0);
+            int result = string.Compare(string.Join("", track1.Artists), string.Join("", track2.Artists),
+                                        StringComparison.CurrentCulture);
             if (result == 0)
                 result = string.Compare(string.Join("", track1.Album.Artists), string.Join("", track2.Album.Artists),
                                         StringComparison.CurrentCulture);
@@ -126,12 +147,16 @@ namespace Howler.Control
             trackListModel.HandleTrackChanged(args);
         }
 
-        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId, TrackProperty property)
+        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId,
+                                   TrackProperty property)
         {
-            AddTextColumn(selector, columnName, sortColumnId, (track1, track2) => string.Compare(selector(track1), selector(track2), StringComparison.CurrentCulture), property);
+            AddTextColumn(selector, columnName, sortColumnId,
+                          (track1, track2) =>
+                          string.Compare(selector(track1), selector(track2), StringComparison.CurrentCulture), property);
         }
 
-        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId, TrackComparer comparer, TrackProperty property)
+        private void AddTextColumn(StringPropertySelector selector, string columnName, int sortColumnId,
+                                   TrackComparer comparer, TrackProperty property)
         {
             int fixedWidth;
             if (!_settings.ColumnWidths.TryGetValue(property, out fixedWidth))
@@ -143,19 +168,19 @@ namespace Howler.Control
             TrackCellRenderer pathCellTextRenderer = new TrackCellRenderer();
             genericColumn.PackStart(pathCellTextRenderer, true);
             genericColumn.SetCellDataFunc(pathCellTextRenderer,
-                (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
-                    {
-                        Track track = (Track)model.GetValue(iter, 0);
-                        Track playingTrack = ((ITrackListModel) model).CurrentTrack;
-                        bool playing = playingTrack != null && track.Equals(playingTrack);
-                        ((CellRendererText) cell).Text = selector(track);
-                        ((CellRendererText) cell).Weight = playing ? 800 : 400;
-                    });
+                                          (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
+                                              {
+                                                  Track track = (Track) model.GetValue(iter, 0);
+                                                  Track playingTrack = ((ITrackListModel) model).CurrentTrack;
+                                                  bool playing = playingTrack != null && track.Equals(playingTrack);
+                                                  ((CellRendererText) cell).Text = selector(track);
+                                                  ((CellRendererText) cell).Weight = playing ? 800 : 400;
+                                              });
 
             if (sortColumnId >= 0)
             {
                 genericColumn.SortColumnId = sortColumnId;
-                ((ITrackListModel)TrackListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
+                ((ITrackListModel) TrackListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
                     {
                         Track track1 = (Track) model.GetValue(iter1, 0);
                         Track track2 = (Track) model.GetValue(iter2, 0);
@@ -198,27 +223,37 @@ namespace Howler.Control
                     AddTextColumn(t => t.Album != null ? t.Album.Title : null, description, sortColumnId, property);
                     break;
                 case TrackProperty.Artist:
-                    AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Artists.Select(a => a.Name)), description, sortColumnId, property);
+                    AddTextColumn(
+                        t =>
+                        t.Artists == null || t.Artists.Count == 0
+                            ? null
+                            : String.Join("; ", t.Artists.Select(a => a.Name)), description, sortColumnId, property);
                     break;
                 case TrackProperty.AlbumArtist:
-                    AddTextColumn(t => (t.Album == null || t.Album.Artists == null || t.Artists.Count == 0) ? null
-                        : String.Join("; ", t.Album.Artists.Select(a => a.Name)), description, sortColumnId, property);
+                    AddTextColumn(t => (t.Album == null || t.Album.Artists == null || t.Artists.Count == 0)
+                                           ? null
+                                           : String.Join("; ", t.Album.Artists.Select(a => a.Name)), description,
+                                  sortColumnId, property);
                     break;
                 case TrackProperty.Duration:
                     AddTextColumn(t =>
-                    {
-                        TimeSpan timeSpan = TimeSpan.FromMilliseconds(t.Duration);
-                        string length = t.Duration >= 1000*60*60
-                            ? String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}:{2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds)
-                            : String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
-                        return length;
-                    }, description, sortColumnId, property);
+                        {
+                            TimeSpan timeSpan = TimeSpan.FromMilliseconds(t.Duration);
+                            string length = t.Duration >= 1000*60*60
+                                                ? String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}:{2:D2}",
+                                                                timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds)
+                                                : String.Format(CultureInfo.CurrentCulture, "{0}:{1:D2}",
+                                                                timeSpan.Minutes, timeSpan.Seconds);
+                            return length;
+                        }, description, sortColumnId, property);
                     break;
                 case TrackProperty.Bitrate:
-                    AddTextColumn(t => t.Bitrate.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.Bitrate.CompareTo(track2.Bitrate), property);
+                    AddTextColumn(t => t.Bitrate.ToString(CultureInfo.InvariantCulture), description, sortColumnId,
+                                  (track1, track2) => track1.Bitrate.CompareTo(track2.Bitrate), property);
                     break;
                 case TrackProperty.BitsPerSample:
-                    AddTextColumn(t => t.BitsPerSample.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.BitsPerSample.CompareTo(track2.BitsPerSample), property);
+                    AddTextColumn(t => t.BitsPerSample.ToString(CultureInfo.InvariantCulture), description, sortColumnId,
+                                  (track1, track2) => track1.BitsPerSample.CompareTo(track2.BitsPerSample), property);
                     break;
                 case TrackProperty.Bpm:
                     AddTextColumn(t => t.Bpm.ToString(), description, sortColumnId, (track1, track2) =>
@@ -229,7 +264,8 @@ namespace Howler.Control
                         }, property);
                     break;
                 case TrackProperty.ChannelCount:
-                    AddTextColumn(t => t.ChannelCount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.ChannelCount.CompareTo(track2.ChannelCount), property);
+                    AddTextColumn(t => t.ChannelCount.ToString(CultureInfo.InvariantCulture), description, sortColumnId,
+                                  (track1, track2) => track1.ChannelCount.CompareTo(track2.ChannelCount), property);
                     break;
                 case TrackProperty.Codec:
                     AddTextColumn(t => t.Codec, description, sortColumnId, property);
@@ -238,18 +274,22 @@ namespace Howler.Control
                     AddTextColumn(t => t.Date, description, sortColumnId, property);
                     break;
                 case TrackProperty.DateAdded:
-                    AddTextColumn(t => string.Format("{0} {1}", t.DateAdded.ToShortDateString(), t.DateAdded.ToLongTimeString()), description, sortColumnId, (track1, track2) => track1.DateAdded.CompareTo(track2.DateAdded), property);
+                    AddTextColumn(
+                        t => string.Format("{0} {1}", t.DateAdded.ToShortDateString(), t.DateAdded.ToLongTimeString()),
+                        description, sortColumnId, (track1, track2) => track1.DateAdded.CompareTo(track2.DateAdded),
+                        property);
                     break;
                 case TrackProperty.DateLastPlayed:
                     AddTextColumn(t => t.DateLastPlayed.HasValue && t.DateLastPlayed.Value > DateTime.MinValue
-                        ? string.Format("{0} {1}", t.DateLastPlayed.Value.ToShortDateString(), t.DateLastPlayed.Value.ToLongTimeString()) 
-                        : null,
-                        description, sortColumnId, (track1, track2) =>
-                            {
-                                DateTime date1 = track1.DateLastPlayed ?? DateTime.MinValue;
-                                DateTime date2 = track2.DateLastPlayed ?? DateTime.MinValue;
-                                return date1.CompareTo(date2);
-                            }, property);
+                                           ? string.Format("{0} {1}", t.DateLastPlayed.Value.ToShortDateString(),
+                                                           t.DateLastPlayed.Value.ToLongTimeString())
+                                           : null,
+                                  description, sortColumnId, (track1, track2) =>
+                                      {
+                                          DateTime date1 = track1.DateLastPlayed ?? DateTime.MinValue;
+                                          DateTime date2 = track2.DateLastPlayed ?? DateTime.MinValue;
+                                          return date1.CompareTo(date2);
+                                      }, property);
                     break;
                 case TrackProperty.DiscNumber:
                     AddTextColumn(t => t.DiscNumber.ToString(), description, sortColumnId, (track1, track2) =>
@@ -260,10 +300,15 @@ namespace Howler.Control
                         }, property);
                     break;
                 case TrackProperty.Genre:
-                    AddTextColumn(t => t.Artists == null || t.Artists.Count == 0 ? null : String.Join("; ", t.Genres.Select(g => g.Name)), description, sortColumnId, property);
+                    AddTextColumn(
+                        t =>
+                        t.Artists == null || t.Artists.Count == 0
+                            ? null
+                            : String.Join("; ", t.Genres.Select(g => g.Name)), description, sortColumnId, property);
                     break;
                 case TrackProperty.MusicBrainzAlbumId:
-                    AddTextColumn(t => t.Album != null ? t.Album.MusicBrainzId : null, description, sortColumnId, property);
+                    AddTextColumn(t => t.Album != null ? t.Album.MusicBrainzId : null, description, sortColumnId,
+                                  property);
                     break;
                 case TrackProperty.MusicBrainzReleaseId:
                     AddTextColumn(t => t.MusicBrainzId, description, sortColumnId, property);
@@ -272,7 +317,8 @@ namespace Howler.Control
                     AddTextColumn(t => t.Path, description, sortColumnId, property);
                     break;
                 case TrackProperty.Playcount:
-                    AddTextColumn(t => t.Playcount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.Playcount.CompareTo(track2.Playcount), property);
+                    AddTextColumn(t => t.Playcount.ToString(CultureInfo.InvariantCulture), description, sortColumnId,
+                                  (track1, track2) => track1.Playcount.CompareTo(track2.Playcount), property);
                     break;
                 case TrackProperty.Rating:
                     // TODO: implement stars
@@ -284,13 +330,17 @@ namespace Howler.Control
                         }, property);
                     break;
                 case TrackProperty.SampleRate:
-                    AddTextColumn(t => string.Format("{0} Hz", t.SampleRate), description, sortColumnId, (track1, track2) => track1.SampleRate.CompareTo(track2.SampleRate), property);
+                    AddTextColumn(t => string.Format("{0} Hz", t.SampleRate), description, sortColumnId,
+                                  (track1, track2) => track1.SampleRate.CompareTo(track2.SampleRate), property);
                     break;
                 case TrackProperty.Size:
-                    AddTextColumn(t => string.Format("{0:N1} MB", (double)t.Size / (1024 * 1024)), description, sortColumnId, (track1, track2) => track1.Size.CompareTo(track2.Size), property);
+                    AddTextColumn(t => string.Format("{0:N1} MB", (double) t.Size/(1024*1024)), description,
+                                  sortColumnId, (track1, track2) => track1.Size.CompareTo(track2.Size), property);
                     break;
                 case TrackProperty.Summary:
-                    AddTextColumn(t => string.Format("{0} - {1}", String.Join("; ", t.Artists.Select(a => a.Name)), t.Title), description, sortColumnId, property);
+                    AddTextColumn(
+                        t => string.Format("{0} - {1}", String.Join("; ", t.Artists.Select(a => a.Name)), t.Title),
+                        description, sortColumnId, property);
                     break;
                 case TrackProperty.Title:
                     AddTextColumn(t => t.Title, description, sortColumnId, property);
@@ -308,5 +358,13 @@ namespace Howler.Control
                     break;
             }
         }
+
+        private delegate string StringPropertySelector(Track track);
+
+        private delegate int TrackComparer(Track track1, Track track2);
+
+        public Track CurrentTrack { get { return ((ITrackListModel) TrackListView.Model).CurrentTrack; } }
+        public bool HasFocus { get { return TrackListView.HasFocus; } }
+        public event SelectedTrackHandler SelectedTrack;
     }
 }

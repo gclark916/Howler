@@ -3,7 +3,7 @@ using System.Configuration;
 
 namespace Howler.Control
 {
-    class TrackListViewSettings : ApplicationSettingsBase
+    class BaseTrackListViewControllerSettings : ApplicationSettingsBase
     {
         private readonly TrackProperty[] _defaultColumnPropertyArray;
 
@@ -37,7 +37,7 @@ namespace Howler.Control
             }
         }
 
-        public TrackListViewSettings(string settingsKey, TrackProperty[] defaultColumnPropertyArray, Dictionary<TrackProperty, int> defaultColumnWidths) : base(settingsKey)
+        public BaseTrackListViewControllerSettings(string settingsKey, TrackProperty[] defaultColumnPropertyArray, Dictionary<TrackProperty, int> defaultColumnWidths) : base(settingsKey)
         {
             _defaultColumnPropertyArray = defaultColumnPropertyArray;
             _defaultColumnWidths = defaultColumnWidths;

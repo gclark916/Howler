@@ -41,7 +41,7 @@ namespace Howler.Control
 
         public NowPlayingTrackListViewController(AudioPlayer audioPlayer) :
             base(new TrackListStore(new Track[0]), 
-            new TrackListViewSettings("NowPlayingTrackListView", DefaultColumnPropertyArray, DefaultColumnWidths), 
+            new BaseTrackListViewControllerSettings("NowPlayingTrackListView", DefaultColumnPropertyArray, DefaultColumnWidths), 
             audioPlayer)
         {
             audioPlayer.PlaylistChanged += AudioPlayerOnPlaylistChanged;

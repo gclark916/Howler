@@ -1,5 +1,9 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using Iesi.Collections.Generic;
+using TagLib;
+using File = TagLib.File;
 
 namespace Howler.Core.MediaLibrary.Entities
 {
@@ -52,6 +56,41 @@ namespace Howler.Core.MediaLibrary.Entities
         {
             _artists = new HashedSet<Artist>();
             _genres = new HashedSet<Genre>();
+        }
+
+        public virtual IPicture GetPicture()
+        {
+            using (File file = File.Create(Path))
+            {
+                var picture = file.Tag.Pictures.FirstOrDefault();
+                if (picture == null)
+                {
+                    string[] extensions = { ".jpg", ".jpeg", ".png" };
+                    string[] fileNames = {"folder", "cover"};
+                    FileInfo info = new FileInfo(Path);
+                    if (info.Directory != null)
+                    {
+                        var files = Directory.EnumerateFiles(info.Directory.FullName, "*", SearchOption.TopDirectoryOnly);
+                        var imageFiles = files.Where(s => extensions
+                                                      .Any(ext =>
+                                                          {
+                                                              FileInfo fileInfo = new FileInfo(s);
+                                                              return String.Compare(ext, fileInfo.Extension,
+                                                                             StringComparison.OrdinalIgnoreCase) == 0;
+                                                          }));
+                        var imageCoverFiles = imageFiles.Where(s => fileNames.Any(name =>
+                            {
+                                FileInfo imageInfo = new FileInfo(s);
+                                return imageInfo.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase);
+                            })).ToArray();
+
+                        if (imageCoverFiles.Any())
+                            picture = new Picture(imageCoverFiles.First());
+                    }
+                }
+
+                return picture;
+            }
         }
     }
 }

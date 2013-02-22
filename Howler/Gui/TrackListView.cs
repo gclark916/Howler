@@ -11,9 +11,7 @@ namespace Howler.Gui
     {
         public readonly TrackListViewTooltip Tooltip;
         private DateTime _scrollStarted;
-        private uint _dragStartTime = 0;
-        private double _dragStartX;
-        private double _dragStartY;
+        private uint _dragStartTime;
         private TreePath _dragStartPath;
 
         public TrackListView()
