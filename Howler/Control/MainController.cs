@@ -12,7 +12,7 @@ namespace Howler.Control
         private readonly Collection _collection;
         private readonly FilteredTrackListViewController _filteredTrackListViewController;
         private readonly SourceTreeViewController _sourceTreeViewController;
-        private readonly Widget _nowPlayingPanel;
+        private readonly NowPlayingTrackListViewController _nowPlayingTrackListViewController;
         private readonly PlayerControlPanelController _playerControlPanelController;
 
         MainController()
@@ -29,14 +29,14 @@ namespace Howler.Control
             _filteredTrackListViewController = new FilteredTrackListViewController(_collection, audioPlayer);
             _sourceTreeViewController = new SourceTreeViewController(_filteredTrackListViewController, _collection);
             _playerControlPanelController = new PlayerControlPanelController(audioPlayer);
-            _nowPlayingPanel = new Label();
+            _nowPlayingTrackListViewController = new NowPlayingTrackListViewController(audioPlayer);
 
             _window = new MainWindow();
             _window.DeleteEvent += (o, args) => Application.Quit();
 
             _window.AddWest(_sourceTreeViewController.View);
             _window.AddCenter(_filteredTrackListViewController.View);
-            _window.AddEast(_nowPlayingPanel);
+            _window.AddEast(_nowPlayingTrackListViewController.View);
             _window.AddSouth(_playerControlPanelController.View);
 
             _window.ShowAll();

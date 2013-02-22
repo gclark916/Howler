@@ -1,22 +1,24 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Gtk;
 using Howler.Core.MediaLibrary.Entities;
 using Howler.Core.Playback;
 
 namespace Howler.Control
 {
-    class TrackListStore : ListStore
+    class TrackListStore : ListStore, ITrackListModel
     {
         private readonly Dictionary<Track, TreeIter> _trackIters = new Dictionary<Track, TreeIter>();
 
-        public Track CurrentTrack { get; private set; }
+        public Track CurrentTrack { get; set; }
 
         public TrackListStore(IEnumerable<Track> tracks)
-            : base(typeof(Track))
+            : base(typeof(Track), typeof(int))
         {
+            int index = 0;
             foreach (Track track in tracks)
             {
-                TreeIter trackIter = AppendValues(track);
+                TreeIter trackIter = AppendValues(track, index++);
                 _trackIters.Add(track, trackIter);
             }
         }
@@ -38,13 +40,15 @@ namespace Howler.Control
             }
         }
 
-        public void InsertTracks(int position, IEnumerable<Track> tracks)
+        public void SetNewPlaylist(Track[] tracks)
         {
-            int trackIndex = position;
-            foreach (var track in tracks)
+            Clear();
+            _trackIters.Clear();
+            int index = 0;
+            foreach (Track track in tracks)
             {
-                var iter = InsertWithValues(trackIndex, track);
-                _trackIters.Add(track, iter);
+                TreeIter trackIter = AppendValues(track, index++);
+                _trackIters.Add(track, trackIter);
             }
         }
     }

@@ -1,21 +1,32 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Gst;
 using Gst.BasePlugins;
 using Howler.Core.MediaLibrary.Entities;
 
 namespace Howler.Core.Playback
 {
-    class AudioPlayer
+    public class AudioPlayer
     {
         private readonly PlayBin2 _playBin;
         private Track[] _trackArray;
         private uint _currentTrackIndex;
         public event TrackChangedHandler TrackChanged;
+        public event PlaylistChangedHandler PlaylistChanged;
 
         protected virtual void OnTrackChanged(TrackChangedHandlerArgs args)
         {
             TrackChangedHandler handler = TrackChanged;
             if (handler != null) 
+                handler(this, args);
+        }
+
+        protected virtual void OnPlaylistChanged(PlaylistChangedHandlerArgs args)
+        {
+            PlaylistChangedHandler handler = PlaylistChanged;
+            if (handler != null)
                 handler(this, args);
         }
 
@@ -153,6 +164,8 @@ namespace Howler.Core.Playback
             if (trackIndex >= trackArray.Length)
                 throw new ArgumentException("Index out of bounds", "trackIndex");
 
+            OnPlaylistChanged(new PlaylistChangedHandlerArgs {NewPlaylist = trackArray});
+
             OnTrackChanged(new TrackChangedHandlerArgs
             {
                 NewTrack = trackArray[trackIndex],
@@ -219,11 +232,32 @@ namespace Howler.Core.Playback
         {
             return "file:///" + path;
         }
+
+        public void PlayTrackAtIndex(int index)
+        {
+            Debug.Assert(_trackArray.Length > 0 && index < _trackArray.Length && index >= 0);
+
+            _playBin.SetState(State.Ready);
+            OnTrackChanged(new TrackChangedHandlerArgs
+            {
+                NewTrack = _trackArray[index],
+                OldTrack = _trackArray[_currentTrackIndex]
+            });
+            _currentTrackIndex = (uint) index;
+            _playBin.Uri = PathStringToUri(_trackArray[_currentTrackIndex].Path);
+            _playBin.SetState(State.Playing);
+        }
     }
 
-    internal delegate void TrackChangedHandler(object sender, TrackChangedHandlerArgs args);
+    public delegate void TrackChangedHandler(object sender, TrackChangedHandlerArgs args);
+    public delegate void PlaylistChangedHandler(object sender, PlaylistChangedHandlerArgs args);
 
-    internal class TrackChangedHandlerArgs
+    public class PlaylistChangedHandlerArgs
+    {
+        public Track[] NewPlaylist;
+    }
+
+    public class TrackChangedHandlerArgs
     {
         public Track OldTrack;
         public Track NewTrack;

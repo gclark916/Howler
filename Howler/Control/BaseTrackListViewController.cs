@@ -146,7 +146,7 @@ namespace Howler.Control
                 (TreeViewColumn column, CellRenderer cell, TreeModel model, TreeIter iter) =>
                     {
                         Track track = (Track)model.GetValue(iter, 0);
-                        Track playingTrack = ((FilteredTrackListModel) model).CurrentTrack;
+                        Track playingTrack = ((ITrackListModel) model).CurrentTrack;
                         bool playing = playingTrack != null && track.Equals(playingTrack);
                         ((CellRendererText) cell).Text = selector(track);
                         ((CellRendererText) cell).Weight = playing ? 800 : 400;
@@ -155,7 +155,7 @@ namespace Howler.Control
             if (sortColumnId >= 0)
             {
                 genericColumn.SortColumnId = sortColumnId;
-                ((TreeModelSort)TrackListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
+                ((ITrackListModel)TrackListView.Model).SetSortFunc(sortColumnId, (model, iter1, iter2) =>
                     {
                         Track track1 = (Track) model.GetValue(iter1, 0);
                         Track track2 = (Track) model.GetValue(iter2, 0);
@@ -215,16 +215,21 @@ namespace Howler.Control
                     }, description, sortColumnId, property);
                     break;
                 case TrackProperty.Bitrate:
-                    AddTextColumn(t => string.Format("{0} kbps", t.Bitrate), description, sortColumnId, property);
+                    AddTextColumn(t => t.Bitrate.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.Bitrate.CompareTo(track2.Bitrate), property);
                     break;
                 case TrackProperty.BitsPerSample:
-                    AddTextColumn(t => t.BitsPerSample.ToString(CultureInfo.InvariantCulture), description, sortColumnId, property);
+                    AddTextColumn(t => t.BitsPerSample.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.BitsPerSample.CompareTo(track2.BitsPerSample), property);
                     break;
                 case TrackProperty.Bpm:
-                    AddTextColumn(t => t.Bpm.ToString(), description, sortColumnId, property);
+                    AddTextColumn(t => t.Bpm.ToString(), description, sortColumnId, (track1, track2) =>
+                        {
+                            uint bpm1 = track1.Bpm ?? 0;
+                            uint bpm2 = track2.Bpm ?? 0;
+                            return bpm1.CompareTo(bpm2);
+                        }, property);
                     break;
                 case TrackProperty.ChannelCount:
-                    AddTextColumn(t => t.ChannelCount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, property);
+                    AddTextColumn(t => t.ChannelCount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.ChannelCount.CompareTo(track2.ChannelCount), property);
                     break;
                 case TrackProperty.Codec:
                     AddTextColumn(t => t.Codec, description, sortColumnId, property);
@@ -233,13 +238,18 @@ namespace Howler.Control
                     AddTextColumn(t => t.Date, description, sortColumnId, property);
                     break;
                 case TrackProperty.DateAdded:
-                    AddTextColumn(t => string.Format("{0} {1}", t.DateAdded.ToShortDateString(), t.DateAdded.ToLongTimeString()), description, sortColumnId, property);
+                    AddTextColumn(t => string.Format("{0} {1}", t.DateAdded.ToShortDateString(), t.DateAdded.ToLongTimeString()), description, sortColumnId, (track1, track2) => track1.DateAdded.CompareTo(track2.DateAdded), property);
                     break;
                 case TrackProperty.DateLastPlayed:
                     AddTextColumn(t => t.DateLastPlayed.HasValue && t.DateLastPlayed.Value > DateTime.MinValue
                         ? string.Format("{0} {1}", t.DateLastPlayed.Value.ToShortDateString(), t.DateLastPlayed.Value.ToLongTimeString()) 
                         : null,
-                        description, sortColumnId, property);
+                        description, sortColumnId, (track1, track2) =>
+                            {
+                                DateTime date1 = track1.DateLastPlayed ?? DateTime.MinValue;
+                                DateTime date2 = track2.DateLastPlayed ?? DateTime.MinValue;
+                                return date1.CompareTo(date2);
+                            }, property);
                     break;
                 case TrackProperty.DiscNumber:
                     AddTextColumn(t => t.DiscNumber.ToString(), description, sortColumnId, (track1, track2) =>
@@ -262,17 +272,22 @@ namespace Howler.Control
                     AddTextColumn(t => t.Path, description, sortColumnId, property);
                     break;
                 case TrackProperty.Playcount:
-                    AddTextColumn(t => t.Playcount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, property);
+                    AddTextColumn(t => t.Playcount.ToString(CultureInfo.InvariantCulture), description, sortColumnId, (track1, track2) => track1.Playcount.CompareTo(track2.Playcount), property);
                     break;
                 case TrackProperty.Rating:
                     // TODO: implement stars
-                    AddTextColumn(t => t.Rating.ToString(), description, sortColumnId, property);
+                    AddTextColumn(t => t.Rating.ToString(), description, sortColumnId, (track1, track2) =>
+                        {
+                            uint rating1 = track1.Rating ?? 0;
+                            uint rating2 = track2.Rating ?? 0;
+                            return rating1.CompareTo(rating2);
+                        }, property);
                     break;
                 case TrackProperty.SampleRate:
-                    AddTextColumn(t => string.Format("{0} Hz", t.SampleRate), description, sortColumnId, property);
+                    AddTextColumn(t => string.Format("{0} Hz", t.SampleRate), description, sortColumnId, (track1, track2) => track1.SampleRate.CompareTo(track2.SampleRate), property);
                     break;
                 case TrackProperty.Size:
-                    AddTextColumn(t => string.Format("{0:N1} MB", (double)t.Size / (1024 * 1024)), description, sortColumnId, property);
+                    AddTextColumn(t => string.Format("{0:N1} MB", (double)t.Size / (1024 * 1024)), description, sortColumnId, (track1, track2) => track1.Size.CompareTo(track2.Size), property);
                     break;
                 case TrackProperty.Summary:
                     AddTextColumn(t => string.Format("{0} - {1}", String.Join("; ", t.Artists.Select(a => a.Name)), t.Title), description, sortColumnId, property);
@@ -283,8 +298,8 @@ namespace Howler.Control
                 case TrackProperty.TrackNumber:
                     AddTextColumn(t => t.TrackNumber.ToString(), description, sortColumnId, (track1, track2) =>
                         {
-                            var num1 = track1.TrackNumber ?? Int64.MinValue;
-                            var num2 = track2.TrackNumber ?? Int64.MinValue;
+                            uint num1 = track1.TrackNumber ?? uint.MinValue;
+                            uint num2 = track2.TrackNumber ?? uint.MinValue;
                             return num1.CompareTo(num2);
                         }, property);
                     break;
