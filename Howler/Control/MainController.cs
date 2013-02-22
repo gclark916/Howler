@@ -23,6 +23,7 @@ namespace Howler.Control
                 Console.Write(args.ToString());
             };
             _collection = new Collection();
+            _collection.ImportDirectory("F:\\Music\\");
             //_collection.ImportDirectory("F:\\Google Music\\");
             //_collection.ImportDirectory("F:\\Music\\Death Grips\\");
 
@@ -34,8 +35,8 @@ namespace Howler.Control
             _coverArtPanel = new CoverArtPanel(audioPlayer, _filteredTrackListViewController, _nowPlayingTrackListViewController);
 
             VPaned vPaned = new VPaned();
-            vPaned.Add1(_nowPlayingTrackListViewController.View);
-            vPaned.Add2(_coverArtPanel);
+            vPaned.Pack1(_nowPlayingTrackListViewController.View, true, true);
+            vPaned.Pack2(_coverArtPanel, true, true);
 
             _window = new MainWindow();
             _window.DeleteEvent += (o, args) => Application.Quit();

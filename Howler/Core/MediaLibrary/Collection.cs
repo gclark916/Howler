@@ -63,18 +63,33 @@ namespace Howler.Core.MediaLibrary
             {
                 int fileCount = 1;
                 var enumerable = newFiles as string[] ?? newFiles.ToArray();
+                DateTime startTime = DateTime.Now, importTime = DateTime.Now;
+                var tracksNotAdded = new List<string>();
                 foreach (string file in enumerable)
                 {
                     if (fileCount%20 == 0)
                     {
+                        var span = DateTime.Now.Subtract(startTime);
+                        Console.WriteLine("Importing file {0}/{1} {2}", fileCount, enumerable.Count(), span.TotalMilliseconds);
                         session.Flush();
                         session.Clear();
+                        startTime = DateTime.Now;
                     }
-                    var startTime = DateTime.Now;
-                    ImportFile(file, session);
-                    var span = DateTime.Now.Subtract(startTime);
-                    Console.WriteLine("Imported file {0}/{1} {2}", fileCount++, enumerable.Count(), span.TotalMilliseconds);
+                    try
+                    {
+                        ImportFile(file, session);
+                    }
+                    catch (Exception)
+                    {
+                        tracksNotAdded.Add(file);
+                    }
+                    fileCount++;
                 }
+
+                Console.WriteLine("Imported file {0}/{1} {2} seconds", fileCount, enumerable.Count(), DateTime.Now.Subtract(importTime).TotalSeconds);
+
+                if (tracksNotAdded.Any())
+                    Console.WriteLine("{0} tracks not added");
 
                 try
                 {
@@ -148,11 +163,14 @@ namespace Howler.Core.MediaLibrary
         private void AddTrackToDatabase(string filePath, TagLib.File file, ISession session, string tagLibHash)
         {
             Album trackAlbum = AddNonTrackEntitiesAndReturnAlbum(file, session);
+            var trackArtists = GetTrackArtistsForTag(session, file.Tag);
+            var trackGenres = GetTrackGenresForTag(session, file.Tag);
 
             FileInfo fileInfo = new FileInfo(filePath);
             Track newTrack = new Track
             {
                 Album = trackAlbum,
+                Artists = new HashedSet<Artist>(trackArtists.ToArray()),
                 Bitrate = (uint) file.Properties.AudioBitrate,
                 BitsPerSample = (uint) file.Properties.BitsPerSample,
                 Bpm = file.Tag.BeatsPerMinute == 0 ? (uint?)null : file.Tag.BeatsPerMinute,
@@ -162,6 +180,7 @@ namespace Howler.Core.MediaLibrary
                 DateAdded = DateTime.Now,
                 DiscNumber = file.Tag.Disc > 0 ? (uint?)file.Tag.Disc : null,
                 Duration = (UInt64)file.Properties.Duration.TotalMilliseconds,
+                Genres = new HashedSet<Genre>(trackGenres.ToArray()),
                 MusicBrainzId = file.Tag.MusicBrainzTrackId,
                 Path = filePath,
                 Playcount = 0,
@@ -173,26 +192,6 @@ namespace Howler.Core.MediaLibrary
                 TrackNumber = file.Tag.Track > 0 ? (uint?)file.Tag.Track : null,
             };
 
-            IEnumerable<Artist> trackArtists = GetTrackArtistsForTag(session, file.Tag);
-
-            foreach (Artist trackArtist in trackArtists)
-            {
-                newTrack.Artists.Add(trackArtist);
-                trackArtist.Tracks.Add(newTrack);
-                session.Update(trackArtist);
-            }
-
-            IEnumerable<Genre> trackGenres = GetTrackGenresForTag(session, file.Tag);
-
-            foreach (Genre genre in trackGenres)
-            {
-                newTrack.Genres.Add(genre);
-                genre.Tracks.Add(newTrack);
-                session.Update(genre);
-            }
-
-            file.Dispose();
-
             session.Save(newTrack);
         }
 
@@ -201,13 +200,11 @@ namespace Howler.Core.MediaLibrary
             Album trackAlbum = AddNonTrackEntitiesAndReturnAlbum(file, session);
 
             IEnumerable<Artist> newTrackArtists = GetTrackArtistsForTag(session, file.Tag);
-            IEnumerable<Artist> artistsToRemove = track.Artists.Where(a => !newTrackArtists.Contains(a));
-            IEnumerable<Artist> artistsToAdd = newTrackArtists.Where(a => !track.Artists.Contains(a));
 
             IEnumerable<Genre> newTrackGenres = GetTrackGenresForTag(session, file.Tag);
-            IEnumerable<Genre> genresToRemove = track.Genres.Where(g => !newTrackGenres.Contains(g));
-            IEnumerable<Genre> genresToAdd = newTrackGenres.Where(g => !track.Genres.Contains(g));
 
+            track.Artists = new HashedSet<Artist>(newTrackArtists.ToArray());
+            track.Genres = new HashedSet<Genre>(newTrackGenres.ToArray());
             track.Path = filePath;
             track.Title = file.Tag.Title;
             track.Album = trackAlbum;
@@ -225,63 +222,42 @@ namespace Howler.Core.MediaLibrary
             track.Bpm = file.Tag.BeatsPerMinute == 0 ? (uint?)null : file.Tag.BeatsPerMinute;
             track.Rating = file.Tag.GetRatingNullableUInt32();
 
-            foreach (Artist trackArtist in artistsToRemove)
-            {
-                trackArtist.Tracks.Remove(track);
-                session.Update(trackArtist);
-                track.Artists.Remove(trackArtist);
-            }
-
-            foreach (Artist trackArtist in artistsToAdd)
-            {
-                trackArtist.Tracks.Add(track);
-                session.Update(trackArtist);
-                track.Artists.Add(trackArtist);
-            }
-
-            foreach (Genre genre in genresToRemove)
-            {
-                genre.Tracks.Remove(track);
-                session.Update(genre);
-                track.Genres.Remove(genre);
-            }
-
-            foreach (Genre genre in genresToAdd)
-            {
-                genre.Tracks.Add(track);
-                session.Update(genre);
-                track.Genres.Add(genre);
-            }
+            session.Update(track);
         }
 
         private IEnumerable<Genre> GetTrackGenresForTag(ISession session, Tag tag)
         {
+            // All these ToArrays are necessary because things seem to screw up if a linq Ienumerable is used in NHibernate's linq query
+            var tagGenres = tag.Genres.Select(s => s.TrimEnd('\0')).ToArray();
+
             var genres = (from genre in session.Query<Genre>()
-                         where tag.Genres.Contains(genre.Name)
-                         select genre)
-                         .Fetch(g => g.Tracks);
+                          where tagGenres.Contains(genre.Name)
+                         select genre);
 
             return genres;
         }
 
         private IEnumerable<Artist> GetTrackArtistsForTag(ISession session, Tag tag)
         {
+            var tagArtists = tag.Performers.Select(s => s.TrimEnd('\0')).ToArray();
+
             var artists = (from artist in session.Query<Artist>()
-                          where tag.Performers.Contains(artist.Name)
-                          select artist)
-                          .Fetch(a => a.Tracks);
+                           where tagArtists.Contains(artist.Name)
+                          select artist);
 
             return artists;
         }
 
         private Album AddNonTrackEntitiesAndReturnAlbum(TagLib.File file, ISession session)
         {
-            IEnumerable<string> artistsToAdd = file.Tag.AlbumArtists
+            var artistsToAdd = file.Tag.AlbumArtists
                     .Union(file.Tag.Performers)
+                    .Select(s => s.TrimEnd('\0'))
+                    .ToArray()
                     .Except(from artist in session.Query<Artist>()
                             select artist.Name
                         , StringComparer.Ordinal)
-                    .ToList();
+                        .ToList();
 
             if (artistsToAdd.Any())
             {
@@ -297,40 +273,34 @@ namespace Howler.Core.MediaLibrary
             }
 
             // Add album if necessary
+            var tagAlbumArtists = file.Tag.AlbumArtists.Select(s => s.TrimEnd('\0')).ToArray();
+
             var albumArtistsQueryable =
                 (from artist in session.Query<Artist>()
-                 where file.Tag.AlbumArtists.Contains(artist.Name)
+                 where tagAlbumArtists.Contains(artist.Name)
                  select artist)
-                 .Fetch(a => a.Albums)
                  .ToList();
 
-            //var albumArtistsHashSet = albumArtistsQueryable.ToHashSet();
             var albumArtists = new HashedSet<Artist>(albumArtistsQueryable);
-
             string albumArtistsHash = Album.ComputeArtistsHash(albumArtists);
 
             // matchingAlbumsInDatabase.Count() should be 0 or 1
-            IEnumerable<Album> matchingAlbumsInDatabase = 
+            var tagAlbum = file.Tag.Album.TrimEnd('\0');
+
+            var matchingAlbumsInDatabase = 
                 (from album in session.Query<Album>()
-                 where album.Title == file.Tag.Album
+                 where album.Title == tagAlbum
                  && album.ArtistsHash == albumArtistsHash
-                 select album)
-                 .ToList();
+                 select album);
 
             Album trackAlbum;
             if (!matchingAlbumsInDatabase.Any())
             {
                 trackAlbum = new Album
                     {
-                        Title = file.Tag.Album,
+                        Title = tagAlbum,
                         Artists = albumArtists
                     };
-
-                foreach (Artist artist in albumArtists)
-                {
-                    artist.Albums.Add(trackAlbum);
-                    session.Update(artist);
-                }
 
                 session.Save(trackAlbum);
             }
@@ -340,7 +310,7 @@ namespace Howler.Core.MediaLibrary
             }
 
             // Add genres if necessary
-            IEnumerable<string> genreNamesToAdd = file.Tag.Genres.Except(
+            var genreNamesToAdd = file.Tag.Genres.Select(s => s.TrimEnd('\0')).Except(
                 from genre in session.Query<Genre>()
                 select genre.Name, StringComparer.Ordinal);
 

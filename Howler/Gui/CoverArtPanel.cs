@@ -35,8 +35,6 @@ namespace Howler.Gui
             vBox.PackStart(_picture, true, true, 0);
             Add(vBox);
 
-            _selectedButton.Activate();
-
             _selectedButton.Toggled += SelectedButtonOnToggled;
             _playingButton.Toggled += PlayingButtonOnToggled;
 
@@ -50,12 +48,18 @@ namespace Howler.Gui
             audioPlayer.TrackChanged += AudioPlayerOnTrackChanged;
 
             ShowAll();
+
+            _selectedButton.Shown += (sender, args) => _selectedButton.Toggle();
         }
 
         private void PlayingButtonOnToggled(object sender, EventArgs eventArgs)
         {
             if (!_playingButton.Active)
+            {
+                if (!_selectedButton.Active)
+                    _selectedButton.Active = true;
                 return;
+            }
 
             if (_selectedButton.Active)
                 _selectedButton.Active = false;
@@ -65,7 +69,11 @@ namespace Howler.Gui
         private void SelectedButtonOnToggled(object sender, EventArgs eventArgs)
         {
             if (!_selectedButton.Active)
+            {
+                if (!_playingButton.Active)
+                    _playingButton.Active = true;
                 return;
+            }
 
             if (_playingButton.Active)
                 _playingButton.Active = false;
@@ -121,7 +129,7 @@ namespace Howler.Gui
 
         protected override void OnSizeAllocated(Rectangle allocation)
         {
-            if (_resize)
+            if (_originalPixbuf != null && _resize)
             {
                 int width, height;
                 CalculateScaledWidthAndHeight(_originalPixbuf, out width, out height);
@@ -167,6 +175,9 @@ namespace Howler.Gui
             float minScaleFactor = widthScaleFactor < heightScaleFactor ? widthScaleFactor : heightScaleFactor;
             width = (int)(minScaleFactor * (float)imageWidth);
             height = (int)(minScaleFactor * (float)imageHeight);
+
+            width = width > 0 ? width : 1;
+            height = height > 0 ? height : 1;
         }
     }
 

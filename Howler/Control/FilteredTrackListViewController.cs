@@ -79,6 +79,7 @@ namespace Howler.Control
             Debug.Assert(trackListModel != null, "trackListModel != null");
 
             trackListModel.Filter = trackFilter;
+            TrackListView.Selection.SelectPath(new TreePath(new int[1] {0}));
         }
     }
 }

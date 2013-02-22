@@ -33,19 +33,17 @@ namespace Howler.Gui
             _centerAndEastHPaned = new HPaned();
             _westAndRestHPaned.Pack2(_centerAndEastHPaned, true, true);
             _centerAndEastHPaned.Pack1(_center, true, true);
-            _centerAndEastHPaned.Pack2(_east, false, false);
+            _centerAndEastHPaned.Pack2(_east, true, true);
+
+            _centerAndEastHPaned.Position = 1000;
 
             _vBox.PackStart(_north, false, false, 0);
             _vBox.PackEnd(_south, false, false, 0);
             _vBox.PackEnd(_westAndRestHPaned, true, true, 0);
 
             Add(_vBox);
-            if ((Child != null))
-            {
-                Child.ShowAll();
-            }
-            
-            Show();
+
+            ShowAll();
         }
 
         public void AddWest(Widget widget)
