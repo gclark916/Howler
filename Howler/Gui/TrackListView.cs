@@ -11,6 +11,10 @@ namespace Howler.Gui
     {
         public readonly TrackListViewTooltip Tooltip;
         private DateTime _scrollStarted;
+        private uint _dragStartTime = 0;
+        private double _dragStartX;
+        private double _dragStartY;
+        private TreePath _dragStartPath;
 
         public TrackListView()
         {
@@ -19,6 +23,58 @@ namespace Howler.Gui
             FixedHeightMode = true;
             _scrollStarted = DateTime.MinValue;
             Tooltip = new TrackListViewTooltip(this);
+            Selection.Mode = SelectionMode.Multiple;
+        }
+
+        protected override bool OnButtonPressEvent(EventButton evnt)
+        {
+            Console.WriteLine("Button pressed");
+            if (evnt.Button == 1)
+            {
+                _dragStartTime = evnt.Time;
+                GetPathAtPos((int) evnt.X, (int) evnt.Y, out _dragStartPath);
+            }
+            return base.OnButtonPressEvent(evnt);
+        }
+
+        protected override bool OnButtonReleaseEvent(EventButton evnt)
+        {
+            if (evnt.Button == 1)
+            {
+                if (evnt.Time - _dragStartTime > 500)
+                {
+                    TreePath endPath;
+                    if (!GetPathAtPos((int) evnt.X, (int) evnt.Y, out endPath))
+                    {
+                        GetPathAtPos(1, 1, out endPath);
+                    }
+                    if (_dragStartPath.Compare(endPath) < 0)
+                        Selection.SelectRange(_dragStartPath, endPath);
+                    else
+                        Selection.SelectRange(endPath, _dragStartPath);
+                }
+
+                _dragStartTime = 0;
+                Console.WriteLine("Button released {0}", _dragStartTime);
+            }
+            return base.OnButtonReleaseEvent(evnt);
+        }
+
+        protected override bool OnLeaveNotifyEvent(EventCrossing evnt)
+        {
+            /*if (evnt.Time - _dragStartTime > 500)
+            {
+                GLib.Timeout.Add(500, MultipleSelectOutsideWindowHander);
+            }*/
+            return base.OnLeaveNotifyEvent(evnt);
+        }
+
+        private bool MultipleSelectOutsideWindowHander()
+        {
+            int x, y;
+            GetPointer(out x, out y);
+            Console.WriteLine("x {0} y {1}", x, y);
+            return _dragStartTime != 0;
         }
 
         protected override bool OnScrollEvent(EventScroll evnt)
@@ -29,6 +85,29 @@ namespace Howler.Gui
 
         protected override bool OnMotionNotifyEvent(EventMotion evnt)
         {
+            // First check if we need to draw a box for multiple selection via dragging
+            if (_dragStartTime != 0 && evnt.Time - _dragStartTime > 500)
+            {
+                Console.WriteLine("Motion {0}", _dragStartTime);
+                TreePath endPath;
+                GetPathAtPos((int)evnt.X, (int)evnt.Y, out endPath);
+                if (!GetPathAtPos((int)evnt.X, (int)evnt.Y, out endPath))
+                {
+                    GetPathAtPos(1, 1, out endPath);
+                }
+                if (_dragStartPath.Compare(endPath) < 0)
+                {
+                    Selection.UnselectAll();
+                    Selection.SelectRange(_dragStartPath, endPath);
+                }
+                else
+                {
+                    Selection.UnselectAll();
+                    Selection.SelectRange(endPath, _dragStartPath);
+                }
+            }
+
+            // Now start logic for tooltips
             if (!evnt.Window.Equals(BinWindow))
                 goto hide;
 

@@ -8,13 +8,15 @@ using Howler.Core.Playback;
 
 namespace Howler.Control
 {
-    class TrackListModel : TreeModelSort
+    class FilteredTrackListModel : TreeModelSort, ITrackListModel
     {
-        private TrackListViewController.TrackFilter _trackFilter = track => true;
+        public delegate bool TrackFilter(Track track);
+
+        private TrackFilter _trackFilter = track => true;
         private readonly Dictionary<Track, TreeIter> _unfilteredTrackIters;
 
         public Track CurrentTrack { get; private set; }
-        public TrackListViewController.TrackFilter TrackFilter
+        public TrackFilter Filter
         {
             set
             {
@@ -23,15 +25,15 @@ namespace Howler.Control
             }
         }
 
-        public TrackListModel(IEnumerable<Track> tracks)
+        public FilteredTrackListModel(IEnumerable<Track> tracks)
             : this(CreateListStoreAndDictionaryTuple(tracks))
         { }
 
-        public TrackListModel(Collection collection)
+        public FilteredTrackListModel(Collection collection)
             : this(CreateListStoreAndDictionaryTuple(collection))
         { }
 
-        private TrackListModel(Tuple<ListStore, Dictionary<Track, TreeIter>> tuple)
+        private FilteredTrackListModel(Tuple<ListStore, Dictionary<Track, TreeIter>> tuple)
             : base(new TreeModelFilter(tuple.Item1, null))
         {
             _unfilteredTrackIters = tuple.Item2;

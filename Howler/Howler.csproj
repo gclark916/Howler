@@ -142,12 +142,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Control\BaseTrackListViewController.cs" />
+    <Compile Include="Control\ITrackListModel.cs" />
+    <Compile Include="Control\NowPlayingPanelController.cs" />
     <Compile Include="Control\PlayerControlPanelController.cs" />
     <Compile Include="Control\SourceTreeViewController.cs" />
-    <Compile Include="Control\TrackListModel.cs" />
+    <Compile Include="Control\FilteredTrackListModel.cs" />
+    <Compile Include="Control\TrackListStore.cs" />
     <Compile Include="Control\TrackProperty.cs" />
     <Compile Include="Control\TrackListViewController.cs" />
-    <Compile Include="Control\TracksListViewSettings.cs" />
+    <Compile Include="Control\TrackListViewSettings.cs" />
     <Compile Include="Core\Database\Collection.cs" />
     <Compile Include="Core\Database\Collection.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -175,7 +179,6 @@
     <Compile Include="Gui\SourceTreeView.cs" />
     <Compile Include="Gui\TrackListView.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Core\Base\LocalTrack.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>

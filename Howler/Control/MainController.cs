@@ -10,7 +10,7 @@ namespace Howler.Control
     {
         private readonly MainWindow _window;
         private readonly Collection _collection;
-        private readonly TrackListViewController _trackListViewController;
+        private readonly FilteredTrackListViewController _filteredTrackListViewController;
         private readonly SourceTreeViewController _sourceTreeViewController;
         private readonly Widget _nowPlayingPanel;
         private readonly PlayerControlPanelController _playerControlPanelController;
@@ -26,8 +26,8 @@ namespace Howler.Control
             //_collection.ImportDirectory("F:\\Music\\Death Grips\\");
 
             AudioPlayer audioPlayer = new AudioPlayer();
-            _trackListViewController = new TrackListViewController(_collection, audioPlayer);
-            _sourceTreeViewController = new SourceTreeViewController(_trackListViewController, _collection);
+            _filteredTrackListViewController = new FilteredTrackListViewController(_collection, audioPlayer);
+            _sourceTreeViewController = new SourceTreeViewController(_filteredTrackListViewController, _collection);
             _playerControlPanelController = new PlayerControlPanelController(audioPlayer);
             _nowPlayingPanel = new Label();
 
@@ -35,7 +35,7 @@ namespace Howler.Control
             _window.DeleteEvent += (o, args) => Application.Quit();
 
             _window.AddWest(_sourceTreeViewController.View);
-            _window.AddCenter(_trackListViewController.View);
+            _window.AddCenter(_filteredTrackListViewController.View);
             _window.AddEast(_nowPlayingPanel);
             _window.AddSouth(_playerControlPanelController.View);
 

@@ -11,11 +11,11 @@ namespace Howler.Control
     {
         public ScrolledWindow View { get; private set; }
         private readonly SourceTreeView _sourceTreeView;
-        private readonly TrackListViewController _trackListViewController;
+        private readonly FilteredTrackListViewController _filteredTrackListViewController;
 
-        public SourceTreeViewController(TrackListViewController trackListViewController, Collection collection)
+        public SourceTreeViewController(FilteredTrackListViewController filteredTrackListViewController, Collection collection)
         {
-            _trackListViewController = trackListViewController;
+            _filteredTrackListViewController = filteredTrackListViewController;
 
             _sourceTreeView = new SourceTreeView();
             _sourceTreeView.Model = CreateSourceTreeStore(collection);
@@ -48,7 +48,7 @@ namespace Howler.Control
             treeSelection.GetSelected(out model, out iter);
             SourceTreeStoreValue value = (SourceTreeStoreValue)model.GetValue(iter, 0);
             if (value != null)
-                _trackListViewController.FilterStore(value.TrackFilter);
+                _filteredTrackListViewController.FilterStore(value.TrackFilter);
         }
 
         private static TreeStore CreateSourceTreeStore(Collection collection)
@@ -99,7 +99,7 @@ namespace Howler.Control
     class SourceTreeStoreValue
     {
         public string DisplayString;
-        public TrackListViewController.TrackFilter TrackFilter;
+        public FilteredTrackListModel.TrackFilter TrackFilter;
         public TestExpandRowHandler TestExpandRowHandler;
     }
 }
