@@ -2,3 +2,5 @@ Howler/bin
 Howler/obj
 *.suo
 /packages
+Howler/x64/
+Howler/x86/

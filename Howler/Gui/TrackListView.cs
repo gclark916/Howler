@@ -39,7 +39,7 @@ namespace Howler.Gui
         {
             if (evnt.Button == 1)
             {
-                if (evnt.Time - _dragStartTime > 500)
+                if (_dragStartTime > 0 && evnt.Time - _dragStartTime > 500)
                 {
                     TreePath endPath;
                     if (!GetPathAtPos((int) evnt.X, (int) evnt.Y, out endPath))
@@ -158,7 +158,6 @@ namespace Howler.Gui
                 if (labelWidth < cellRectangle.Width)
                     goto hide;
                 Tooltip.Show();
-                Console.WriteLine("{0} {1} {2} {3}", path, evnt.X, evnt.Y, cellRendererText.Text);
                 goto returnBase;
             }
 
@@ -214,6 +213,12 @@ namespace Howler.Gui
         {
             Hide();
             return _trackListView.ProcessEvent(evnt);
+        }
+
+        protected override bool OnLeaveNotifyEvent(EventCrossing evnt)
+        {
+            Hide();
+            return base.OnLeaveNotifyEvent(evnt);
         }
     }
 

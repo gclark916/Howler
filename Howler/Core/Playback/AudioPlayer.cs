@@ -58,8 +58,8 @@ namespace Howler.Core.Playback
             Element audioSink = SelectAudioSink();
             _playBin.AudioSink = audioSink;
             _playBin.Bus.AddWatch(OnBusMessage);
-            /* TODO: implement gapless playback (wait for gstreamer fix?)
-             * _playBin.AboutToFinish += (o, args) =>
+            // TODO: implement gapless playback (wait for gstreamer fix?)
+            /*_playBin.AboutToFinish += (o, args) =>
                 {
                     if (_currentTrackIndex + 1 >= _trackArray.Length) 
                         return;

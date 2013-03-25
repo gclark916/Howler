@@ -49,7 +49,7 @@ namespace Howler.Gui
 
             ShowAll();
 
-            _selectedButton.Shown += (sender, args) => _selectedButton.Toggle();
+            _selectedButton.Shown += (sender, args) => _selectedButton.Active = true;
         }
 
         private void PlayingButtonOnToggled(object sender, EventArgs eventArgs)
@@ -86,6 +86,9 @@ namespace Howler.Gui
                 return;
 
             IPicture picture = track.GetPicture();
+            if (picture == null)
+                return;
+
             if (usePlayingTrack)
             {
                 _playingPixbuf = _playingPixbuf ?? new Pixbuf(picture.Data.Data);

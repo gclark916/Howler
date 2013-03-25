@@ -54,8 +54,6 @@ namespace Howler.Control
             TrackListView.RowActivated += TrackListViewOnRowActivated;
             TrackListView.ColumnsChanged += TrackListViewOnColumnsChanged;
             TrackListView.Selection.Changed += SelectionOnChanged;
-            TrackListView.DeleteEvent += (o, args) => Console.WriteLine("Delete");
-            TrackListView.DestroyEvent += (o, args) => Console.WriteLine("DestroyEvent");
             TrackListView.Destroyed += (sender, args) =>
                 {
                     Console.WriteLine("Destroyed");
@@ -66,10 +64,6 @@ namespace Howler.Control
                         column.RemoveNotification("width", TrackListViewColumnNotifyHandler);
                     }
                 };
-            TrackListView.Hidden += (sender, args) => Console.WriteLine("Hidden");
-            TrackListView.Removed += (o, args) => Console.WriteLine("Removed");
-            TrackListView.UnmapEvent += (o, args) => Console.WriteLine("UnmapEvent");
-            TrackListView.Unmapped += (sender, args) => Console.WriteLine("Unmapped");
             AudioPlayer.TrackChanged += AudioPlayerOnTrackChanged;
 
             ((ITrackListModel) TrackListView.Model).DefaultSortFunc = DefaultSortFunc;
@@ -77,10 +71,31 @@ namespace Howler.Control
             View = new ScrolledWindow {TrackListView};
         }
 
+        public ScrolledWindow View { get; private set; }
+
+        #region ITrackSelector Members
+
+        public Track CurrentTrack
+        {
+            get { return ((ITrackListModel) TrackListView.Model).CurrentTrack; }
+        }
+
+        public bool HasFocus
+        {
+            get { return TrackListView.HasFocus; }
+        }
+
+        public event SelectedTrackHandler SelectedTrack;
+
+        #endregion
+
         private void SelectionOnChanged(object sender, EventArgs eventArgs)
         {
             ITrackListModel model = TrackListView.Model as ITrackListModel;
             TreePath[] rows = TrackListView.Selection.GetSelectedRows();
+            if (!rows.Any())
+                return;
+
             Debug.Assert(model != null, "model != null");
 
             TreeIter iter;
@@ -92,8 +107,6 @@ namespace Howler.Control
             if (handler != null)
                 handler(this, args);
         }
-
-        public ScrolledWindow View { get; private set; }
 
         private void TrackListViewOnColumnsChanged(object sender, EventArgs eventArgs)
         {
@@ -359,12 +372,16 @@ namespace Howler.Control
             }
         }
 
+        #region Nested type: StringPropertySelector
+
         private delegate string StringPropertySelector(Track track);
+
+        #endregion
+
+        #region Nested type: TrackComparer
 
         private delegate int TrackComparer(Track track1, Track track2);
 
-        public Track CurrentTrack { get { return ((ITrackListModel) TrackListView.Model).CurrentTrack; } }
-        public bool HasFocus { get { return TrackListView.HasFocus; } }
-        public event SelectedTrackHandler SelectedTrack;
+        #endregion
     }
 }

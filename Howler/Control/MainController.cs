@@ -23,8 +23,8 @@ namespace Howler.Control
                 Console.Write(args.ToString());
             };
             _collection = new Collection();
-            _collection.ImportDirectory("F:\\Music\\");
-            //_collection.ImportDirectory("F:\\Google Music\\");
+            //_collection.ImportDirectory("F:\\Music\\");
+            _collection.ImportDirectory("D:\\Google Music\\");
             //_collection.ImportDirectory("F:\\Music\\Death Grips\\");
 
             AudioPlayer audioPlayer = new AudioPlayer();
