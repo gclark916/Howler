@@ -16,14 +16,14 @@ namespace Howler.Core.Playback
         public event TrackChangedHandler TrackChanged;
         public event PlaylistChangedHandler PlaylistChanged;
 
-        protected virtual void OnTrackChanged(TrackChangedHandlerArgs args)
+        protected virtual void OnTrackChanged(TrackChangedEventArgs args)
         {
             TrackChangedHandler handler = TrackChanged;
             if (handler != null) 
                 handler(this, args);
         }
 
-        protected virtual void OnPlaylistChanged(PlaylistChangedHandlerArgs args)
+        protected virtual void OnPlaylistChanged(PlaylistChangedEventArgs args)
         {
             PlaylistChangedHandler handler = PlaylistChanged;
             if (handler != null)
@@ -98,7 +98,7 @@ namespace Howler.Core.Playback
                     if (_currentTrackIndex+1 < _trackArray.Length)
                     {
                         _playBin.SetState(State.Ready);
-                        OnTrackChanged(new TrackChangedHandlerArgs
+                        OnTrackChanged(new TrackChangedEventArgs
                             {
                                 NewTrack = _trackArray[_currentTrackIndex + 1], 
                                 OldTrack = _trackArray[_currentTrackIndex]
@@ -164,9 +164,9 @@ namespace Howler.Core.Playback
             if (trackIndex >= trackArray.Length)
                 throw new ArgumentException("Index out of bounds", "trackIndex");
 
-            OnPlaylistChanged(new PlaylistChangedHandlerArgs {NewPlaylist = trackArray});
+            OnPlaylistChanged(new PlaylistChangedEventArgs {NewPlaylist = trackArray});
 
-            OnTrackChanged(new TrackChangedHandlerArgs
+            OnTrackChanged(new TrackChangedEventArgs
             {
                 NewTrack = trackArray[trackIndex],
                 OldTrack = _currentTrackIndex < _trackArray.Length ? _trackArray[_currentTrackIndex] : null
@@ -195,7 +195,7 @@ namespace Howler.Core.Playback
                 return;
 
             _playBin.SetState(State.Ready);
-            OnTrackChanged(new TrackChangedHandlerArgs
+            OnTrackChanged(new TrackChangedEventArgs
             {
                 NewTrack = _trackArray[_currentTrackIndex - 1],
                 OldTrack = _trackArray[_currentTrackIndex]
@@ -209,7 +209,7 @@ namespace Howler.Core.Playback
             if (_currentTrackIndex + 1 < _trackArray.Length)
             {
                 _playBin.SetState(State.Ready);
-                OnTrackChanged(new TrackChangedHandlerArgs
+                OnTrackChanged(new TrackChangedEventArgs
                 {
                     NewTrack = _trackArray[_currentTrackIndex + 1],
                     OldTrack = _trackArray[_currentTrackIndex]
@@ -238,7 +238,7 @@ namespace Howler.Core.Playback
             Debug.Assert(_trackArray.Length > 0 && index < _trackArray.Length && index >= 0);
 
             _playBin.SetState(State.Ready);
-            OnTrackChanged(new TrackChangedHandlerArgs
+            OnTrackChanged(new TrackChangedEventArgs
             {
                 NewTrack = _trackArray[index],
                 OldTrack = _trackArray[_currentTrackIndex]
@@ -249,15 +249,15 @@ namespace Howler.Core.Playback
         }
     }
 
-    public delegate void TrackChangedHandler(object sender, TrackChangedHandlerArgs args);
-    public delegate void PlaylistChangedHandler(object sender, PlaylistChangedHandlerArgs args);
+    public delegate void TrackChangedHandler(object sender, TrackChangedEventArgs args);
+    public delegate void PlaylistChangedHandler(object sender, PlaylistChangedEventArgs args);
 
-    public class PlaylistChangedHandlerArgs
+    public class PlaylistChangedEventArgs
     {
         public Track[] NewPlaylist;
     }
 
-    public class TrackChangedHandlerArgs
+    public class TrackChangedEventArgs : EventArgs
     {
         public Track OldTrack;
         public Track NewTrack;

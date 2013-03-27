@@ -65,7 +65,7 @@ namespace Howler.Control
             return new Tuple<ListStore, Dictionary<Track, TreeIter>>(unfilteredModel, unfilteredTrackIters);
         }
 
-        public void HandleTrackChanged(TrackChangedHandlerArgs args)
+        public void HandleTrackChanged(TrackChangedEventArgs args)
         {
             var filteredModel = Model as TreeModelFilter;
             Debug.Assert(filteredModel != null, "filteredModel != null");

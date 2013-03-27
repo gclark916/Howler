@@ -6,7 +6,7 @@ namespace Howler.Control
 {
     interface ITrackListModel : TreeModel, TreeSortable
     {
-        void HandleTrackChanged(TrackChangedHandlerArgs args);
+        void HandleTrackChanged(TrackChangedEventArgs args);
         Track CurrentTrack { get; }
     }
 }

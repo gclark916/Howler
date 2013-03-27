@@ -102,7 +102,7 @@ namespace Howler.Control
             model.GetIter(out iter, rows[0]);
             Track track = (Track) model.GetValue(iter, 0);
 
-            var args = new SelectedTrackHandlerArgs {SelectedTrack = track};
+            var args = new SelectedTrackEventArgs {SelectedTrack = track};
             SelectedTrackHandler handler = SelectedTrack;
             if (handler != null)
                 handler(this, args);
@@ -120,7 +120,6 @@ namespace Howler.Control
             }
 
             _settings.ColumnPropertyArray = trackPropertyArray;
-            _settings.Save();
         }
 
         private static int DefaultSortFunc(TreeModel model, TreeIter iter1, TreeIter iter2)
@@ -153,7 +152,7 @@ namespace Howler.Control
 
         protected abstract void TrackListViewOnRowActivated(object o, RowActivatedArgs args);
 
-        private void AudioPlayerOnTrackChanged(object sender, TrackChangedHandlerArgs args)
+        private void AudioPlayerOnTrackChanged(object sender, TrackChangedEventArgs args)
         {
             var trackListModel = TrackListView.Model as ITrackListModel;
             Debug.Assert(trackListModel != null, "trackListModel != null");

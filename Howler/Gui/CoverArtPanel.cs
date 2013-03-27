@@ -32,7 +32,32 @@ namespace Howler.Gui
             buttonBox.Add(_playingButton);
             buttonBox.Add(_selectedButton);
             vBox.PackStart(buttonBox, false, false, 0);
-            vBox.PackStart(_picture, true, true, 0);
+
+            EventBox eventBox = new EventBox();
+            eventBox.Add(_picture);
+            eventBox.ButtonPressEvent += (o, args) =>
+                {
+                    var window = new Gtk.Window(WindowType.Toplevel);
+                    var pixbuf = _currentPixbuf.Copy();
+                    AutoScalingImage image = new AutoScalingImage {Pixbuf = pixbuf};
+                    window.Add(image);
+                    int left, top, right, bottom;
+                    window.GetFrameDimensions(out left, out top, out right, out bottom);
+                    int windowHeightWithFullImage = pixbuf.Height + top + bottom;
+                    if (windowHeightWithFullImage > Screen.Height)
+                        window.SetDefaultSize(((pixbuf.Width + left + right) * Screen.Height) / windowHeightWithFullImage, Screen.Height);
+                    else
+                        window.SetDefaultSize(pixbuf.Width + left + right, pixbuf.Height + top + bottom);
+                    window.AllowShrink = true;
+                    Track track = _selectedButton.Active ? _selectedTrack : _playingTrack;
+                    window.Title = String.Format("{0} - {1}",
+                        string.Join("; ", track.Album.Artists.Select(a => a.Name)),
+                        track.Album.Title);
+                    window.ShowAll();
+                    image.QueueResize();
+                };
+
+            vBox.PackStart(eventBox, true, true, 0);
             Add(vBox);
 
             _selectedButton.Toggled += SelectedButtonOnToggled;
@@ -47,9 +72,9 @@ namespace Howler.Gui
 
             audioPlayer.TrackChanged += AudioPlayerOnTrackChanged;
 
-            ShowAll();
-
             _selectedButton.Shown += (sender, args) => _selectedButton.Active = true;
+
+            ShowAll();
         }
 
         private void PlayingButtonOnToggled(object sender, EventArgs eventArgs)
@@ -87,7 +112,7 @@ namespace Howler.Gui
 
             IPicture picture = track.GetPicture();
             if (picture == null)
-                return;
+                picture = new Picture("Images/DefaultAlbumArt.png");
 
             if (usePlayingTrack)
             {
@@ -103,7 +128,7 @@ namespace Howler.Gui
             _picture.QueueDraw();
         }
 
-        private void AudioPlayerOnTrackChanged(object sender, TrackChangedHandlerArgs args)
+        private void AudioPlayerOnTrackChanged(object sender, TrackChangedEventArgs args)
         {
             _playingTrack = args.NewTrack;
             _playingPixbuf = null;
@@ -111,7 +136,7 @@ namespace Howler.Gui
                 SetPictureAndQueueDraw(_playingTrack, true);
         }
 
-        private void TrackSelectorOnSelectedTrack(object sender, SelectedTrackHandlerArgs args)
+        private void TrackSelectorOnSelectedTrack(object sender, SelectedTrackEventArgs args)
         {
             _selectedTrack = args.SelectedTrack;
             _selectedPixbuf = null;
@@ -127,7 +152,6 @@ namespace Howler.Gui
 
         public AutoScalingImage()
         {
-            AddEvents((int) EventMask.Button1MotionMask);
         }
 
         protected override void OnSizeAllocated(Rectangle allocation)
@@ -144,16 +168,6 @@ namespace Howler.Gui
                 base.OnSizeAllocated(allocation);
                 _resize = true;
             }
-        }
-
-        protected override bool OnButtonPressEvent(EventButton evnt)
-        {
-            var window = new Gtk.Window(WindowType.Toplevel);
-            var pixbuf = _originalPixbuf.Copy();
-            Image image = new Image(pixbuf);
-            window.Add(image);
-            window.ShowAll();
-            return base.OnButtonPressEvent(evnt);
         }
 
         public new Pixbuf Pixbuf { 
@@ -179,8 +193,11 @@ namespace Howler.Gui
             width = (int)(minScaleFactor * (float)imageWidth);
             height = (int)(minScaleFactor * (float)imageHeight);
 
-            width = width > 0 ? width : 1;
-            height = height > 0 ? height : 1;
+            if (width < 10 || height < 10)
+            {
+                width = 10;
+                height = 10;
+            }
         }
     }
 
@@ -191,9 +208,9 @@ namespace Howler.Gui
         event SelectedTrackHandler SelectedTrack;
     }
 
-    public delegate void SelectedTrackHandler(object sender, SelectedTrackHandlerArgs args);
+    public delegate void SelectedTrackHandler(object sender, SelectedTrackEventArgs args);
 
-    public class SelectedTrackHandlerArgs
+    public class SelectedTrackEventArgs : EventArgs
     {
         public Track SelectedTrack;
     }

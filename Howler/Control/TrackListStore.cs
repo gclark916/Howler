@@ -15,15 +15,10 @@ namespace Howler.Control
         public TrackListStore(IEnumerable<Track> tracks)
             : base(typeof(Track), typeof(int))
         {
-            int index = 0;
-            foreach (Track track in tracks)
-            {
-                TreeIter trackIter = AppendValues(track, index++);
-                _trackIters.Add(track, trackIter);
-            }
+            SetNewPlaylist(tracks);
         }
 
-        public void HandleTrackChanged(TrackChangedHandlerArgs args)
+        public void HandleTrackChanged(TrackChangedEventArgs args)
         {
             TreeIter iter = new TreeIter();
             CurrentTrack = args.NewTrack;
@@ -40,7 +35,7 @@ namespace Howler.Control
             }
         }
 
-        public void SetNewPlaylist(Track[] tracks)
+        public void SetNewPlaylist(IEnumerable<Track> tracks)
         {
             Clear();
             _trackIters.Clear();

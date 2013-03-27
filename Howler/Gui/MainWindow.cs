@@ -20,7 +20,6 @@ namespace Howler.Gui
             DefaultWidth = 1280;
             DefaultHeight = 800;
 
-            
             _north = new Alignment(0, 0, 1, 1);
             _south = new Alignment(0, 0, 1, 1);
             _west = new Alignment(0, 0, 1, 1);

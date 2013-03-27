@@ -52,7 +52,7 @@
     <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>Howler.Control.MainController</StartupObject>
+    <StartupObject>Howler.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestCertificateThumbprint>905AAA9CEFC5C38CA36824A06FB703CF10BF752C</ManifestCertificateThumbprint>
@@ -148,8 +148,8 @@
   <ItemGroup>
     <Compile Include="Control\BaseTrackListViewController.cs" />
     <Compile Include="Control\ITrackListModel.cs" />
-    <Compile Include="Control\NowPlayingPanel.cs" />
     <Compile Include="Control\NowPlayingPanelController.cs" />
+    <Compile Include="Control\NowPlayingPanelControllerSettings.cs" />
     <Compile Include="Control\NowPlayingTrackListViewController.cs" />
     <Compile Include="Control\PlayerControlPanelController.cs" />
     <Compile Include="Control\SourceTreeViewController.cs" />
@@ -174,10 +174,11 @@
     <Compile Include="Core\Tagging\TagLibExtensions.cs" />
     <Compile Include="Gui\CoverArtPanel.cs" />
     <Compile Include="Gui\MainWindow.cs" />
-    <Compile Include="Control\MainController.cs" />
+    <Compile Include="Control\MainWindowController.cs" />
     <Compile Include="Gui\PlayerControlPanel.cs" />
     <Compile Include="Gui\SourceTreeView.cs" />
     <Compile Include="Gui\TrackListView.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -232,6 +233,9 @@
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Images\DefaultAlbumArt.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="x64\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

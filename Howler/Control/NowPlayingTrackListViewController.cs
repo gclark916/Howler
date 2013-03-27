@@ -56,7 +56,7 @@ namespace Howler.Control
                 };
         }
 
-        private void AudioPlayerOnPlaylistChanged(object sender, PlaylistChangedHandlerArgs args)
+        private void AudioPlayerOnPlaylistChanged(object sender, PlaylistChangedEventArgs args)
         {
             var trackListStore = TrackListView.Model as TrackListStore;
             Debug.Assert(trackListStore != null, "trackListStore != null");
