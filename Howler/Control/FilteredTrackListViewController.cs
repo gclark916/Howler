@@ -10,7 +10,22 @@ namespace Howler.Control
 {
     class FilteredTrackListViewController : BaseTrackListViewController
     {
-        private static readonly TrackProperty[] DefaultColumnPropertyArray = { TrackProperty.TrackNumber, TrackProperty.Title, TrackProperty.Artist, TrackProperty.Album, TrackProperty.AlbumArtist, TrackProperty.Date, TrackProperty.Genre, TrackProperty.Rating, TrackProperty.Bitrate, TrackProperty.Size, TrackProperty.DateAdded, TrackProperty.Codec, TrackProperty.Path };
+        private static readonly TrackProperty[] DefaultColumnPropertyArray =
+            {
+                TrackProperty.TrackNumber, 
+                TrackProperty.Title, 
+                TrackProperty.Artist, 
+                TrackProperty.Album, 
+                TrackProperty.AlbumArtist, 
+                TrackProperty.Date, 
+                TrackProperty.Genre, 
+                TrackProperty.Rating, 
+                TrackProperty.Bitrate, 
+                TrackProperty.Size, 
+                TrackProperty.DateAdded, 
+                TrackProperty.Codec, 
+                TrackProperty.Path
+            };
 
         private static readonly Dictionary<TrackProperty, int> DefaultColumnWidths = new Dictionary<TrackProperty, int>
             {

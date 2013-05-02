@@ -37,8 +37,8 @@ namespace Howler.Gui
             _centerAndEastHPaned.Position = 1000;
 
             _vBox.PackStart(_north, false, false, 0);
-            _vBox.PackEnd(_south, false, false, 0);
-            _vBox.PackEnd(_westAndRestHPaned, true, true, 0);
+            _vBox.PackStart(_westAndRestHPaned, true, true, 0);
+            _vBox.PackStart(_south, false, false, 0);
 
             Add(_vBox);
 

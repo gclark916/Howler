@@ -12,7 +12,7 @@ using WindowType = Gtk.WindowType;
 
 namespace Howler.Gui
 {
-    class CoverArtPanel : Alignment
+    class CoverArtPanel : VBox
     {
         private readonly AutoScalingImage _picture = new AutoScalingImage();
         private Track _selectedTrack;
@@ -23,15 +23,14 @@ namespace Howler.Gui
         private Pixbuf _playingPixbuf;
         private Pixbuf _currentPixbuf;
 
-        public CoverArtPanel(AudioPlayer audioPlayer, params ITrackSelector[] trackSelectors) : base(0, 0, 1, 1)
+        public CoverArtPanel(AudioPlayer audioPlayer, params ITrackSelector[] trackSelectors) : base(false, 0)
         {
-            VBox vBox = new VBox(false, 0);
             ButtonBox buttonBox = new HButtonBox();
             _selectedButton = new ToggleButton("Selected");
             _playingButton = new ToggleButton("Playing");
             buttonBox.Add(_playingButton);
             buttonBox.Add(_selectedButton);
-            vBox.PackStart(buttonBox, false, false, 0);
+            PackStart(buttonBox, false, false, 0);
 
             EventBox eventBox = new EventBox();
             eventBox.Add(_picture);
@@ -39,7 +38,7 @@ namespace Howler.Gui
                 {
                     var window = new Gtk.Window(WindowType.Toplevel);
                     var pixbuf = _currentPixbuf.Copy();
-                    AutoScalingImage image = new AutoScalingImage {Pixbuf = pixbuf};
+                    AutoScalingImage image = new AutoScalingImage();
                     window.Add(image);
                     int left, top, right, bottom;
                     window.GetFrameDimensions(out left, out top, out right, out bottom);
@@ -49,16 +48,31 @@ namespace Howler.Gui
                     else
                         window.SetDefaultSize(pixbuf.Width + left + right, pixbuf.Height + top + bottom);
                     window.AllowShrink = true;
+                    image.Pixbuf = pixbuf;
+
                     Track track = _selectedButton.Active ? _selectedTrack : _playingTrack;
                     window.Title = String.Format("{0} - {1}",
                         string.Join("; ", track.Album.Artists.Select(a => a.Name)),
                         track.Album.Title);
                     window.ShowAll();
                     image.QueueResize();
+
+                    window.SizeAllocated += (o1, allocatedArgs) =>
+                        {
+                            Console.WriteLine("window: {0}", window.Allocation);
+                            Console.WriteLine("args: {0}", allocatedArgs.Allocation);
+                            if (window.Allocation.Width != allocatedArgs.Allocation.Width ||
+                                window.Allocation.Height != allocatedArgs.Allocation.Height)
+                            {
+                                image.SizeAllocate(allocatedArgs.Allocation);
+                                image.QueueResize();
+                                image.QueueDraw();
+                                window.QueueDraw();
+                            }
+                        };
                 };
 
-            vBox.PackStart(eventBox, true, true, 0);
-            Add(vBox);
+            PackStart(eventBox, true, true, 0);
 
             _selectedButton.Toggled += SelectedButtonOnToggled;
             _playingButton.Toggled += PlayingButtonOnToggled;
@@ -110,9 +124,7 @@ namespace Howler.Gui
             if (track == null)
                 return;
 
-            IPicture picture = track.GetPicture();
-            if (picture == null)
-                picture = new Picture("Images/DefaultAlbumArt.png");
+            IPicture picture = track.GetPicture() ?? new Picture("Images/DefaultAlbumArt.png");
 
             if (usePlayingTrack)
             {
@@ -150,18 +162,17 @@ namespace Howler.Gui
         private Pixbuf _originalPixbuf;
         private bool _resize = true;
 
-        public AutoScalingImage()
-        {
-        }
-
         protected override void OnSizeAllocated(Rectangle allocation)
         {
+            Console.WriteLine("image allocate: {0} {1}", allocation, _resize);
             if (_originalPixbuf != null && _resize)
             {
                 int width, height;
                 CalculateScaledWidthAndHeight(_originalPixbuf, out width, out height);
                 base.Pixbuf = _originalPixbuf.ScaleSimple(width, height, InterpType.Bilinear);
                 _resize = false;
+                QueueResize();
+                QueueDraw();
             }
             else
             {
@@ -190,13 +201,13 @@ namespace Howler.Gui
             float widthScaleFactor = (float)allocWidth / (float)imageWidth;
             float heightScaleFactor = (float)allocHeight / (float)imageHeight;
             float minScaleFactor = widthScaleFactor < heightScaleFactor ? widthScaleFactor : heightScaleFactor;
-            width = (int)(minScaleFactor * (float)imageWidth);
-            height = (int)(minScaleFactor * (float)imageHeight);
+            width = (int) Math.Ceiling(minScaleFactor * (float)imageWidth);
+            height = (int) Math.Ceiling(minScaleFactor * (float)imageHeight);
 
-            if (width < 10 || height < 10)
+            if (width < 100 || height < 100)
             {
-                width = 10;
-                height = 10;
+                width = 100;
+                height = 100;
             }
         }
     }

@@ -148,12 +148,14 @@
   <ItemGroup>
     <Compile Include="Control\BaseTrackListViewController.cs" />
     <Compile Include="Control\ITrackListModel.cs" />
+    <Compile Include="Control\MenuBarController.cs" />
     <Compile Include="Control\NowPlayingPanelController.cs" />
     <Compile Include="Control\NowPlayingPanelControllerSettings.cs" />
     <Compile Include="Control\NowPlayingTrackListViewController.cs" />
     <Compile Include="Control\PlayerControlPanelController.cs" />
     <Compile Include="Control\SourceTreeViewController.cs" />
     <Compile Include="Control\FilteredTrackListModel.cs" />
+    <Compile Include="Control\TrackListHeaderMenuController.cs" />
     <Compile Include="Control\TrackListStore.cs" />
     <Compile Include="Control\TrackProperty.cs" />
     <Compile Include="Control\FilteredTrackListViewController.cs" />

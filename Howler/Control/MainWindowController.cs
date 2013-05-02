@@ -14,6 +14,7 @@ namespace Howler.Control
         private readonly SourceTreeViewController _sourceTreeViewController;
         private readonly PlayerControlPanelController _playerControlPanelController;
         private readonly NowPlayingPanelController _nowPlayingPanelController;
+        private readonly MenuBarController _menuBarController;
 
         public MainWindowController()
         {
@@ -28,6 +29,7 @@ namespace Howler.Control
             _sourceTreeViewController = new SourceTreeViewController(_filteredTrackListViewController, _collection);
             _playerControlPanelController = new PlayerControlPanelController(audioPlayer);
             _nowPlayingPanelController = new NowPlayingPanelController(audioPlayer, _filteredTrackListViewController);
+            _menuBarController = new MenuBarController();
 
             _window = new MainWindow();
             _window.DeleteEvent += (o, args) => Application.Quit();
@@ -36,6 +38,9 @@ namespace Howler.Control
             _window.AddCenter(_filteredTrackListViewController.View);
             _window.AddEast(_nowPlayingPanelController.View);
             _window.AddSouth(_playerControlPanelController.View);
+            _window.AddNorth(_menuBarController.View);
+
+            _window.QueueResize();
 
             _window.ShowAll();
         }
